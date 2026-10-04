@@ -1,5 +1,4 @@
-const API_URL =
-  "https://buk-intelligent-timetable-system-production.up.railway.app/api/exam-timetables";
+const API_URL = "http://localhost:5000/api/exam-timetables";
 
 let generatedExamTimetable = [];
 

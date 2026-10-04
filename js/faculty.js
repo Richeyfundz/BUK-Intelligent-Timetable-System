@@ -3,8 +3,7 @@
 // Faculty Module
 // =============================================
 
-const API_URL =
-  "https://buk-intelligent-timetable-system-production.up.railway.app/api/faculties";
+const API_URL = "http://localhost:5000/api/faculties";
 
 let editingFacultyId = null;
 

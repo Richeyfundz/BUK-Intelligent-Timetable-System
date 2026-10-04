@@ -1,11 +1,9 @@
-js;
 // =====================================================
 // BUK AI TIMETABLE - FRONTEND
 // COMPLETE 100-400 LEVEL GENERATOR
 // =====================================================
 
-const API_URL =
-  "https://buk-intelligent-timetable-system-production.up.railway.app/api/ai-timetables";
+const API_URL = "http://localhost:5000/api/ai-timetables";
 
 let generatedTimetable = [];
 
@@ -73,9 +71,13 @@ function checkLogin() {
 
 async function generateTimetable() {
   const semester = document.getElementById("semester")?.value;
+
   const academicYear = document.getElementById("academicYear")?.value.trim();
+
   const startDate = document.getElementById("startDate")?.value;
+
   const endDate = document.getElementById("endDate")?.value;
+
   const generateBtn = document.getElementById("generateBtn");
 
   // =================================================
@@ -115,9 +117,9 @@ async function generateTimetable() {
     generateBtn.disabled = true;
 
     generateBtn.innerHTML = `
-      <span class="spinner-border spinner-border-sm me-2"></span>
-      Generating Complete Timetable...
-    `;
+            <span class="spinner-border spinner-border-sm me-2"></span>
+            Generating Complete Timetable...
+        `;
   }
 
   try {
@@ -127,13 +129,18 @@ async function generateTimetable() {
 
     const response = await fetch(`${API_URL}/generate`, {
       method: "POST",
+
       headers: {
         "Content-Type": "application/json",
       },
+
       body: JSON.stringify({
         semester,
+
         academic_year: academicYear,
+
         start_date: startDate,
+
         end_date: endDate,
       }),
     });
@@ -177,9 +184,9 @@ async function generateTimetable() {
       generateBtn.disabled = false;
 
       generateBtn.innerHTML = `
-        <i class="bi bi-stars me-1"></i>
-        Generate Complete Timetable
-      `;
+                <i class="bi bi-stars me-1"></i>
+                Generate Complete Timetable
+            `;
     }
   }
 }
@@ -199,12 +206,15 @@ function displayTimetable(timetable) {
 
   if (!timetable || timetable.length === 0) {
     tableBody.innerHTML = `
-      <tr>
-        <td colspan="8" class="text-center text-muted py-4">
-          No timetable generated.
-        </td>
-      </tr>
-    `;
+            <tr>
+                <td
+                    colspan="8"
+                    class="text-center text-muted py-4"
+                >
+                    No timetable generated.
+                </td>
+            </tr>
+        `;
 
     return;
   }
@@ -252,13 +262,16 @@ function displayTimetable(timetable) {
       dayHeader.className = "table-primary";
 
       dayHeader.innerHTML = `
-        <td colspan="8" class="fw-bold py-3">
-          <i class="bi bi-calendar3 me-2"></i>
-          ${escapeHTML(item.day)}
-          -
-          ${formatDate(item.lecture_date)}
-        </td>
-      `;
+                <td
+                    colspan="8"
+                    class="fw-bold py-3"
+                >
+                    <i class="bi bi-calendar3 me-2"></i>
+                    ${escapeHTML(item.day)}
+                    -
+                    ${formatDate(item.lecture_date)}
+                </td>
+            `;
 
       tableBody.appendChild(dayHeader);
     }
@@ -272,69 +285,70 @@ function displayTimetable(timetable) {
     row.dataset.id = `${item.course_id}-${item.lecture_date}-${item.start_time}`;
 
     row.innerHTML = `
-      <td>
-        <span class="badge bg-primary">
-          ${escapeHTML(item.level)} Level
-        </span>
-      </td>
 
-      <td class="fw-semibold">
-        ${formatTime(item.start_time)}
-        -
-        ${formatTime(item.end_time)}
-      </td>
+            <td>
+                <span class="badge bg-primary">
+                    ${escapeHTML(item.level)} Level
+                </span>
+            </td>
 
-      <td>
-        <strong>
-          ${escapeHTML(item.course_code)}
-        </strong>
+            <td class="fw-semibold">
+                ${formatTime(item.start_time)}
+                -
+                ${formatTime(item.end_time)}
+            </td>
 
-        <br>
+            <td>
+                <strong>
+                    ${escapeHTML(item.course_code)}
+                </strong>
 
-        <small class="text-muted">
-          ${escapeHTML(item.course_title)}
-        </small>
-      </td>
+                <br>
 
-      <td>
-        ${escapeHTML(item.lecturer_name || "Not assigned")}
-      </td>
+                <small class="text-muted">
+                    ${escapeHTML(item.course_title)}
+                </small>
+            </td>
 
-      <td>
-        ${escapeHTML(item.venue_name || "Not assigned")}
+            <td>
+                ${escapeHTML(item.lecturer_name || "Not assigned")}
+            </td>
 
-        ${
-          item.venue_code
-            ? `
-              <br>
-              <small class="text-muted">
-                ${escapeHTML(item.venue_code)}
-              </small>
-            `
-            : ""
-        }
-      </td>
+            <td>
+                ${escapeHTML(item.venue_name || "Not assigned")}
 
-      <td>
-        <span class="badge bg-success">
-          No Clash
-        </span>
-      </td>
+                ${
+                  item.venue_code
+                    ? `
+                        <br>
+                        <small class="text-muted">
+                            ${escapeHTML(item.venue_code)}
+                        </small>
+                        `
+                    : ""
+                }
+            </td>
 
-      <td>
-        ${escapeHTML(item.session || "Lecture")}
-      </td>
+            <td>
+                <span class="badge bg-success">
+                    No Clash
+                </span>
+            </td>
 
-      <td>
-        <button
-          type="button"
-          class="btn btn-sm btn-outline-danger"
-          onclick="removeTimetableRow(this)"
-        >
-          <i class="bi bi-trash"></i>
-        </button>
-      </td>
-    `;
+            <td>
+                ${escapeHTML(item.session || "Lecture")}
+            </td>
+
+            <td>
+                <button
+                    type="button"
+                    class="btn btn-sm btn-outline-danger"
+                    onclick="removeTimetableRow(this)"
+                >
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        `;
 
     tableBody.appendChild(row);
   });
@@ -378,6 +392,7 @@ function formatTime(time) {
   }
 
   let hour = parseInt(parts[0], 10);
+
   const minute = parts[1];
 
   const suffix = hour >= 12 ? "PM" : "AM";
@@ -420,6 +435,7 @@ function removeTimetableRow(button) {
 async function saveTimetable() {
   if (!generatedTimetable || generatedTimetable.length === 0) {
     alert("Please generate a timetable first.");
+
     return;
   }
 
@@ -429,17 +445,19 @@ async function saveTimetable() {
     saveBtn.disabled = true;
 
     saveBtn.innerHTML = `
-      <span class="spinner-border spinner-border-sm me-2"></span>
-      Saving...
-    `;
+            <span class="spinner-border spinner-border-sm me-2"></span>
+            Saving...
+        `;
   }
 
   try {
     const response = await fetch(`${API_URL}/save`, {
       method: "POST",
+
       headers: {
         "Content-Type": "application/json",
       },
+
       body: JSON.stringify({
         timetable: generatedTimetable,
       }),
@@ -463,9 +481,9 @@ async function saveTimetable() {
       saveBtn.disabled = false;
 
       saveBtn.innerHTML = `
-        <i class="bi bi-save me-1"></i>
-        Save Timetable
-      `;
+                <i class="bi bi-save me-1"></i>
+                Save Timetable
+            `;
     }
   }
 }
@@ -495,13 +513,16 @@ function clearTimetable() {
 
   if (tableBody) {
     tableBody.innerHTML = `
-      <tr>
-        <td colspan="8" class="text-center text-muted py-4">
-          Generate a complete timetable
-          to see the results here.
-        </td>
-      </tr>
-    `;
+            <tr>
+                <td
+                    colspan="8"
+                    class="text-center text-muted py-4"
+                >
+                    Generate a complete timetable
+                    to see the results here.
+                </td>
+            </tr>
+        `;
   }
 
   const summary = document.getElementById("timetableSummary");
@@ -549,66 +570,67 @@ function showSummary(summary) {
   const levels = Array.isArray(summary.levels) ? summary.levels : [];
 
   container.innerHTML = `
-    <div class="row g-3 mb-4">
 
-      <div class="col-md-3">
-        <div class="card border-0 shadow-sm">
-          <div class="card-body">
-            <small class="text-muted">
-              Courses
-            </small>
+        <div class="row g-3 mb-4">
 
-            <h4 class="mb-0">
-              ${summary.total_courses || 0}
-            </h4>
-          </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <small class="text-muted">
+                            Courses
+                        </small>
+
+                        <h4 class="mb-0">
+                            ${summary.total_courses || 0}
+                        </h4>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <small class="text-muted">
+                            Sessions
+                        </small>
+
+                        <h4 class="mb-0">
+                            ${summary.total_sessions || 0}
+                        </h4>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <small class="text-muted">
+                            Levels
+                        </small>
+
+                        <h4 class="mb-0">
+                            ${levels.length ? levels.join(", ") : "All"}
+                        </h4>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <small class="text-muted">
+                            Status
+                        </small>
+
+                        <h4 class="mb-0 text-success">
+                            No Clash
+                        </h4>
+                    </div>
+                </div>
+            </div>
+
         </div>
-      </div>
-
-      <div class="col-md-3">
-        <div class="card border-0 shadow-sm">
-          <div class="card-body">
-            <small class="text-muted">
-              Sessions
-            </small>
-
-            <h4 class="mb-0">
-              ${summary.total_sessions || 0}
-            </h4>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-md-3">
-        <div class="card border-0 shadow-sm">
-          <div class="card-body">
-            <small class="text-muted">
-              Levels
-            </small>
-
-            <h4 class="mb-0">
-              ${levels.length ? levels.join(", ") : "All"}
-            </h4>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-md-3">
-        <div class="card border-0 shadow-sm">
-          <div class="card-body">
-            <small class="text-muted">
-              Status
-            </small>
-
-            <h4 class="mb-0 text-success">
-              No Clash
-            </h4>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  `;
+    `;
 }
 
 // =====================================================

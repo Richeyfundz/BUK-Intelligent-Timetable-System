@@ -1,15 +1,6 @@
-js;
 // ======================================
 // BUK Intelligent Timetable Management System
 // Dashboard
-// Railway + MySQL API Version
-// ======================================
-
-const API_BASE_URL =
-  "https://buk-intelligent-timetable-system-production.up.railway.app/api";
-
-// ======================================
-// PAGE LOAD
 // ======================================
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -19,6 +10,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   if (localStorage.getItem("loggedIn") !== "true") {
     window.location.href = "../index.html";
+
     return;
   }
 
@@ -30,21 +22,20 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const options = {
     weekday: "long",
+
     year: "numeric",
+
     month: "long",
+
     day: "numeric",
   };
 
-  const currentDate = document.getElementById("currentDate");
-  const todayDate = document.getElementById("todayDate");
+  document.getElementById("currentDate").innerHTML = today.toLocaleDateString(
+    "en-GB",
+    options,
+  );
 
-  if (currentDate) {
-    currentDate.innerHTML = today.toLocaleDateString("en-GB", options);
-  }
-
-  if (todayDate) {
-    todayDate.innerHTML = today.toLocaleDateString("en-GB");
-  }
+  document.getElementById("todayDate").innerHTML = today.toLocaleDateString();
 
   // ===============================
   // Dashboard Statistics
@@ -56,103 +47,37 @@ document.addEventListener("DOMContentLoaded", function () {
   // Logout
   // ===============================
 
-  const logoutBtn = document.getElementById("logoutBtn");
-
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", logout);
-  }
+  document.getElementById("logoutBtn").addEventListener("click", logout);
 });
 
 // ======================================
-// Load Statistics From Backend
+// Load Statistics
 // ======================================
 
-async function loadStatistics() {
-  try {
-    const endpoints = [
-      "faculties",
-      "departments",
-      "courses",
-      "lecturers",
-      "students",
-      "venues",
-    ];
+function loadStatistics() {
+  const faculties = JSON.parse(localStorage.getItem("faculties")) || [];
 
-    const responses = await Promise.all(
-      endpoints.map(function (endpoint) {
-        return fetch(`${API_BASE_URL}/${endpoint}`);
-      }),
-    );
+  const departments = JSON.parse(localStorage.getItem("departments")) || [];
 
-    const results = await Promise.all(
-      responses.map(async function (response) {
-        if (!response.ok) {
-          throw new Error("Failed to load dashboard data.");
-        }
+  const courses = JSON.parse(localStorage.getItem("courses")) || [];
 
-        return await response.json();
-      }),
-    );
+  const lecturers = JSON.parse(localStorage.getItem("lecturers")) || [];
 
-    const faculties = getDataArray(results[0]);
-    const departments = getDataArray(results[1]);
-    const courses = getDataArray(results[2]);
-    const lecturers = getDataArray(results[3]);
-    const students = getDataArray(results[4]);
-    const venues = getDataArray(results[5]);
+  const students = JSON.parse(localStorage.getItem("students")) || [];
 
-    // ===============================
-    // Update Counters
-    // ===============================
+  const venues = JSON.parse(localStorage.getItem("venues")) || [];
 
-    setCount("facultyCount", faculties.length);
-    setCount("departmentCount", departments.length);
-    setCount("courseCount", courses.length);
-    setCount("lecturerCount", lecturers.length);
-    setCount("studentCount", students.length);
-    setCount("venueCount", venues.length);
-  } catch (error) {
-    console.error("Dashboard statistics error:", error);
+  document.getElementById("facultyCount").innerHTML = faculties.length;
 
-    setCount("facultyCount", 0);
-    setCount("departmentCount", 0);
-    setCount("courseCount", 0);
-    setCount("lecturerCount", 0);
-    setCount("studentCount", 0);
-    setCount("venueCount", 0);
-  }
-}
+  document.getElementById("departmentCount").innerHTML = departments.length;
 
-// ======================================
-// Get Data Array
-// ======================================
+  document.getElementById("courseCount").innerHTML = courses.length;
 
-function getDataArray(result) {
-  if (Array.isArray(result)) {
-    return result;
-  }
+  document.getElementById("lecturerCount").innerHTML = lecturers.length;
 
-  if (result && Array.isArray(result.data)) {
-    return result.data;
-  }
+  document.getElementById("studentCount").innerHTML = students.length;
 
-  if (result && result.data && Array.isArray(result.data.data)) {
-    return result.data.data;
-  }
-
-  return [];
-}
-
-// ======================================
-// Set Counter
-// ======================================
-
-function setCount(elementId, value) {
-  const element = document.getElementById(elementId);
-
-  if (element) {
-    element.innerHTML = value;
-  }
+  document.getElementById("venueCount").innerHTML = venues.length;
 }
 
 // ======================================
@@ -163,9 +88,8 @@ function logout(e) {
   e.preventDefault();
 
   if (confirm("Are you sure you want to logout?")) {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
     localStorage.removeItem("loggedIn");
+
     localStorage.removeItem("username");
 
     window.location.href = "../index.html";

@@ -1,20 +1,6 @@
 // =============================================
 // BUK Intelligent Timetable Management System
 // Courses Module
-// Railway + MySQL API Version
-// =============================================
-
-const API_URL =
-  "https://buk-intelligent-timetable-system-production.up.railway.app/api/courses";
-
-const DEPARTMENT_API_URL =
-  "https://buk-intelligent-timetable-system-production.up.railway.app/api/departments";
-
-let editingCourseId = null;
-let courses = [];
-
-// =============================================
-// PAGE LOAD
 // =============================================
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -30,454 +16,167 @@ document.addEventListener("DOMContentLoaded", function () {
   if (currentDate) {
     currentDate.textContent = new Date().toLocaleDateString("en-GB", {
       weekday: "long",
+
       day: "numeric",
+
       month: "long",
+
       year: "numeric",
     });
   }
 
-  loadDepartments();
   loadCourses();
 
-  const courseForm = document.getElementById("courseForm");
+  document.getElementById("courseForm").addEventListener("submit", saveCourse);
 
-  if (courseForm) {
-    courseForm.addEventListener("submit", saveCourse);
-  }
+  document
+    .getElementById("searchCourse")
+    .addEventListener("keyup", searchCourse);
 
-  const searchCourseInput = document.getElementById("searchCourse");
-
-  if (searchCourseInput) {
-    searchCourseInput.addEventListener("keyup", searchCourse);
-  }
-
-  const resetCourseBtn = document.getElementById("resetCourseBtn");
-
-  if (resetCourseBtn) {
-    resetCourseBtn.addEventListener("click", resetCourseForm);
-  }
-
-  const logoutBtn = document.getElementById("logoutBtn");
-
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", logout);
-  }
+  document.getElementById("logoutBtn").addEventListener("click", logout);
 });
 
 // =============================================
-// LOAD DEPARTMENTS
+// Save Course
 // =============================================
 
-async function loadDepartments() {
-  const departmentSelect = document.getElementById("courseDepartment");
+function saveCourse(e) {
+  e.preventDefault();
 
-  if (!departmentSelect) {
-    return;
-  }
+  let courses = JSON.parse(localStorage.getItem("courses")) || [];
 
-  try {
-    const response = await fetch(DEPARTMENT_API_URL);
+  const course = {
+    id: Date.now(),
 
-    const result = await response.json();
+    code: document.getElementById("courseCode").value,
 
-    if (!response.ok) {
-      throw new Error(result.message || "Unable to load departments.");
-    }
+    title: document.getElementById("courseTitle").value,
 
-    const departments = Array.isArray(result.data) ? result.data : [];
+    unit: document.getElementById("courseUnit").value,
 
-    departmentSelect.innerHTML = `
-      <option value="">Select Department</option>
-    `;
+    level: document.getElementById("courseLevel").value,
+  };
 
-    departments.forEach(function (department) {
-      const option = document.createElement("option");
+  courses.push(course);
 
-      option.value = department.id;
+  localStorage.setItem("courses", JSON.stringify(courses));
 
-      option.textContent =
-        department.name ||
-        department.department_name ||
-        department.department ||
-        department.code ||
-        "Department";
+  document.getElementById("courseForm").reset();
 
-      departmentSelect.appendChild(option);
-    });
-  } catch (error) {
-    console.error("Department loading error:", error);
-
-    departmentSelect.innerHTML = `
-      <option value="">Unable to load departments</option>
-    `;
-  }
+  loadCourses();
 }
 
 // =============================================
-// LOAD COURSES
+// Load Courses
 // =============================================
 
-async function loadCourses() {
+function loadCourses() {
+  let courses = JSON.parse(localStorage.getItem("courses")) || [];
+
   const table = document.getElementById("courseTable");
-
-  if (!table) {
-    return;
-  }
-
-  table.innerHTML = `
-    <tr>
-      <td colspan="7" class="text-center text-muted py-4">
-        Loading courses...
-      </td>
-    </tr>
-  `;
-
-  try {
-    const response = await fetch(API_URL);
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.message || "Unable to load courses.");
-    }
-
-    courses = Array.isArray(result.data) ? result.data : [];
-
-    displayCourses(courses);
-  } catch (error) {
-    console.error("Course loading error:", error);
-
-    table.innerHTML = `
-      <tr>
-        <td colspan="7" class="text-center text-danger py-4">
-          Unable to load courses from the server.
-        </td>
-      </tr>
-    `;
-  }
-}
-
-// =============================================
-// DISPLAY COURSES
-// =============================================
-
-function displayCourses(courseList) {
-  const table = document.getElementById("courseTable");
-
-  if (!table) {
-    return;
-  }
 
   table.innerHTML = "";
 
-  if (!courseList || courseList.length === 0) {
-    table.innerHTML = `
-      <tr>
-        <td colspan="7" class="text-center text-muted py-4">
-          No courses found.
-        </td>
-      </tr>
-    `;
+  courses.forEach(function (course) {
+    table.innerHTML += `
 
-    return;
-  }
+<tr>
 
-  courseList.forEach(function (course) {
-    const row = document.createElement("tr");
+<td>${course.code}</td>
 
-    row.innerHTML = `
-      <td>
-        <strong>${escapeHTML(course.course_code || "")}</strong>
-      </td>
+<td>${course.title}</td>
 
-      <td>
-        ${escapeHTML(course.course_title || "")}
-      </td>
+<td>${course.unit}</td>
 
-      <td>
-        ${escapeHTML(course.course_unit || "")}
-      </td>
+<td>${course.level}</td>
 
-      <td>
-        ${escapeHTML(course.level || "")}
-      </td>
+<td>
 
-      <td>
-        ${escapeHTML(
-          course.department_name || course.department || "Not assigned",
-        )}
-      </td>
+<button
+class="btn btn-warning btn-sm"
+onclick="editCourse(${course.id})">
 
-      <td>
-        ${escapeHTML(course.semester || "")}
-      </td>
+<i class="bi bi-pencil-square"></i>
 
-      <td>
+</button>
 
-        <button
-          class="btn btn-warning btn-sm me-1"
-          onclick="editCourse(${course.id})"
-          title="Edit Course"
-        >
-          <i class="bi bi-pencil-square"></i>
-        </button>
+<button
+class="btn btn-danger btn-sm"
+onclick="deleteCourse(${course.id})">
 
-        <button
-          class="btn btn-danger btn-sm"
-          onclick="deleteCourse(${course.id})"
-          title="Delete Course"
-        >
-          <i class="bi bi-trash"></i>
-        </button>
+<i class="bi bi-trash"></i>
 
-      </td>
-    `;
+</button>
 
-    table.appendChild(row);
+</td>
+
+</tr>
+
+`;
   });
 }
 
 // =============================================
-// SAVE / UPDATE COURSE
+// Delete Course
 // =============================================
 
-async function saveCourse(e) {
-  e.preventDefault();
+function deleteCourse(id) {
+  if (!confirm("Delete this Course?")) return;
 
-  const courseCode = document.getElementById("courseCode").value.trim();
+  let courses = JSON.parse(localStorage.getItem("courses")) || [];
 
-  const courseTitle = document.getElementById("courseTitle").value.trim();
+  courses = courses.filter((course) => course.id !== id);
 
-  const courseUnit = document.getElementById("courseUnit").value;
+  localStorage.setItem("courses", JSON.stringify(courses));
 
-  const courseLevel = document.getElementById("courseLevel").value;
-
-  const departmentId = document.getElementById("courseDepartment").value;
-
-  const semester = document.getElementById("courseSemester").value;
-
-  if (
-    !courseCode ||
-    !courseTitle ||
-    !courseUnit ||
-    !courseLevel ||
-    !departmentId ||
-    !semester
-  ) {
-    alert("Please complete all course fields.");
-    return;
-  }
-
-  const courseData = {
-    department_id: departmentId,
-    course_code: courseCode,
-    course_title: courseTitle,
-    course_unit: courseUnit,
-    level: courseLevel,
-    semester: semester,
-  };
-
-  try {
-    let response;
-
-    if (editingCourseId) {
-      response = await fetch(`${API_URL}/${editingCourseId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(courseData),
-      });
-    } else {
-      response = await fetch(API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(courseData),
-      });
-    }
-
-    const result = await response.json();
-
-    if (!response.ok || !result.success) {
-      throw new Error(result.message || "Unable to save course.");
-    }
-
-    alert(
-      result.message ||
-        (editingCourseId
-          ? "Course updated successfully."
-          : "Course created successfully."),
-    );
-
-    resetCourseForm();
-
-    loadCourses();
-  } catch (error) {
-    console.error("Course save error:", error);
-
-    alert(error.message || "Unable to connect to the server.");
-  }
+  loadCourses();
 }
 
 // =============================================
-// EDIT COURSE
+// Edit Course
 // =============================================
 
 function editCourse(id) {
-  const course = courses.find((item) => Number(item.id) === Number(id));
+  let courses = JSON.parse(localStorage.getItem("courses")) || [];
 
-  if (!course) {
-    alert("Course not found.");
-    return;
-  }
+  const course = courses.find((course) => course.id === id);
 
-  editingCourseId = id;
+  document.getElementById("courseCode").value = course.code;
 
-  document.getElementById("courseCode").value = course.course_code || "";
+  document.getElementById("courseTitle").value = course.title;
 
-  document.getElementById("courseTitle").value = course.course_title || "";
+  document.getElementById("courseUnit").value = course.unit;
 
-  document.getElementById("courseUnit").value = course.course_unit || "";
+  document.getElementById("courseLevel").value = course.level;
 
-  document.getElementById("courseLevel").value = course.level || "";
-
-  document.getElementById("courseDepartment").value =
-    course.department_id || "";
-
-  document.getElementById("courseSemester").value = course.semester || "";
-
-  const submitButton = document.querySelector(
-    "#courseForm button[type='submit']",
-  );
-
-  if (submitButton) {
-    submitButton.innerHTML = `
-      <i class="bi bi-pencil-square"></i>
-      Update Course
-    `;
-  }
-
-  window.scrollTo({
-    top: 0,
-    behavior: "smooth",
-  });
+  deleteCourse(id);
 }
 
 // =============================================
-// DELETE COURSE
-// =============================================
-
-async function deleteCourse(id) {
-  const confirmed = confirm("Are you sure you want to delete this course?");
-
-  if (!confirmed) {
-    return;
-  }
-
-  try {
-    const response = await fetch(`${API_URL}/${id}`, {
-      method: "DELETE",
-    });
-
-    const result = await response.json();
-
-    if (!response.ok || !result.success) {
-      throw new Error(result.message || "Unable to delete course.");
-    }
-
-    alert(result.message || "Course deleted successfully.");
-
-    loadCourses();
-  } catch (error) {
-    console.error("Course delete error:", error);
-
-    alert(error.message || "Unable to connect to the server.");
-  }
-}
-
-// =============================================
-// SEARCH COURSE
+// Search Course
 // =============================================
 
 function searchCourse() {
-  const keyword = document
-    .getElementById("searchCourse")
-    .value.toLowerCase()
-    .trim();
+  const keyword = document.getElementById("searchCourse").value.toLowerCase();
 
-  const filteredCourses = courses.filter(function (course) {
-    const searchableText = `
-      ${course.course_code || ""}
-      ${course.course_title || ""}
-      ${course.course_unit || ""}
-      ${course.level || ""}
-      ${course.department_name || ""}
-      ${course.department || ""}
-      ${course.semester || ""}
-    `.toLowerCase();
+  const rows = document.querySelectorAll("#courseTable tr");
 
-    return searchableText.includes(keyword);
+  rows.forEach(function (row) {
+    row.style.display = row.innerText.toLowerCase().includes(keyword)
+      ? ""
+      : "none";
   });
-
-  displayCourses(filteredCourses);
 }
 
 // =============================================
-// RESET FORM
-// =============================================
-
-function resetCourseForm() {
-  editingCourseId = null;
-
-  const form = document.getElementById("courseForm");
-
-  if (form) {
-    form.reset();
-  }
-
-  const submitButton = document.querySelector(
-    "#courseForm button[type='submit']",
-  );
-
-  if (submitButton) {
-    submitButton.innerHTML = `
-      <i class="bi bi-save"></i>
-      Save Course
-    `;
-  }
-}
-
-// =============================================
-// ESCAPE HTML
-// =============================================
-
-function escapeHTML(value) {
-  if (value === null || value === undefined) {
-    return "";
-  }
-
-  return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-// =============================================
-// LOGOUT
+// Logout
 // =============================================
 
 function logout(e) {
-  if (e) {
-    e.preventDefault();
-  }
+  e.preventDefault();
 
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
   localStorage.removeItem("loggedIn");
+
   localStorage.removeItem("username");
 
   window.location.href = "../index.html";
