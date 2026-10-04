@@ -1,4 +1,4 @@
-const Department = require("../models/departmentmodel");
+const Department = require("../models/departmentModel");
 
 // Get all departments
 exports.getAllDepartments = (req, res) => {
