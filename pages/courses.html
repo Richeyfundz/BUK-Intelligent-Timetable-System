@@ -33,73 +33,73 @@
 
         <ul class="sidebar-menu">
           <li>
-            <a href="dashboard.html"
-              ><i class="bi bi-speedometer2"></i> Dashboard</a
-            >
+            <a href="dashboard.html">
+              <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
           </li>
 
           <li>
-            <a href="departments.html"
-              ><i class="bi bi-building"></i> Departments</a
-            >
+            <a href="departments.html">
+              <i class="bi bi-building"></i> Departments
+            </a>
           </li>
 
           <li class="active">
-            <a href="courses.html"><i class="bi bi-book"></i> Courses</a>
+            <a href="courses.html"> <i class="bi bi-book"></i> Courses </a>
           </li>
 
           <li>
-            <a href="lecturers.html"
-              ><i class="bi bi-person-workspace"></i> Lecturers</a
-            >
+            <a href="lecturers.html">
+              <i class="bi bi-person-workspace"></i> Lecturers
+            </a>
           </li>
 
           <li>
-            <a href="students.html"
-              ><i class="bi bi-mortarboard"></i> Students</a
-            >
+            <a href="students.html">
+              <i class="bi bi-mortarboard"></i> Students
+            </a>
           </li>
 
           <li>
-            <a href="venues.html"><i class="bi bi-bank"></i> Venues</a>
+            <a href="venues.html"> <i class="bi bi-bank"></i> Venues </a>
           </li>
 
           <li>
-            <a href="ai-timetable.html"
-              ><i class="bi bi-cpu"></i> AI Timetable</a
-            >
+            <a href="ai-timetable.html">
+              <i class="bi bi-cpu"></i> AI Timetable
+            </a>
           </li>
 
           <li>
-            <a href="exam-timetable.html"
-              ><i class="bi bi-calendar-check"></i> Exam Timetable</a
-            >
+            <a href="exam-timetable.html">
+              <i class="bi bi-calendar-check"></i> Exam Timetable
+            </a>
           </li>
 
           <li>
-            <a href="reports.html"><i class="bi bi-bar-chart"></i> Reports</a>
+            <a href="reports.html"> <i class="bi bi-bar-chart"></i> Reports </a>
           </li>
 
           <li>
-            <a href="settings.html"><i class="bi bi-gear"></i> Settings</a>
+            <a href="settings.html"> <i class="bi bi-gear"></i> Settings </a>
           </li>
 
           <li>
-            <a href="about-system.html"
-              ><i class="bi bi-info-circle"></i> About System</a
-            >
+            <a href="about-system.html">
+              <i class="bi bi-info-circle"></i> About System
+            </a>
           </li>
 
           <li>
-            <a href="about-developer.html"
-              ><i class="bi bi-person-badge"></i> About Developer</a
-            >
+            <a href="about-developer.html">
+              <i class="bi bi-person-badge"></i> About Developer
+            </a>
           </li>
 
           <li>
-            <a href="../index.html" id="logoutBtn"
-              ><i class="bi bi-box-arrow-left"></i> Logout</a
-            >
+            <a href="../index.html" id="logoutBtn">
+              <i class="bi bi-box-arrow-left"></i> Logout
+            </a>
           </li>
         </ul>
       </aside>
@@ -108,7 +108,6 @@
         <nav class="topbar">
           <div>
             <h3>Course Management</h3>
-
             <small>Manage University Courses</small>
           </div>
 
@@ -116,11 +115,11 @@
         </nav>
 
         <div class="container-fluid mt-4">
+          <!-- ADD COURSE -->
           <div class="card shadow border-0">
             <div class="card-header bg-primary text-white">
               <h5 class="mb-0">
                 <i class="bi bi-plus-circle"></i>
-
                 Add New Course
               </h5>
             </div>
@@ -129,51 +128,71 @@
               <form id="courseForm">
                 <div class="row">
                   <div class="col-md-3 mb-3">
-                    <label>Course Code</label>
+                    <label class="form-label">Course Code</label>
 
                     <input
                       type="text"
                       id="courseCode"
                       class="form-control"
+                      placeholder="e.g. CSC101"
                       required
                     />
                   </div>
 
                   <div class="col-md-5 mb-3">
-                    <label>Course Title</label>
+                    <label class="form-label">Course Title</label>
 
                     <input
                       type="text"
                       id="courseTitle"
                       class="form-control"
+                      placeholder="e.g. Introduction to Computer Science"
                       required
                     />
                   </div>
 
                   <div class="col-md-2 mb-3">
-                    <label>Unit</label>
+                    <label class="form-label">Unit</label>
 
                     <input
                       type="number"
                       id="courseUnit"
                       class="form-control"
+                      min="1"
+                      max="10"
                       required
                     />
                   </div>
 
                   <div class="col-md-2 mb-3">
-                    <label>Level</label>
+                    <label class="form-label">Level</label>
 
-                    <select id="courseLevel" class="form-select">
-                      <option>100</option>
+                    <select id="courseLevel" class="form-select" required>
+                      <option value="100">100</option>
+                      <option value="200">200</option>
+                      <option value="300">300</option>
+                      <option value="400">400</option>
+                      <option value="500">500</option>
+                    </select>
+                  </div>
+                </div>
 
-                      <option>200</option>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label">Department</label>
 
-                      <option>300</option>
+                    <select id="courseDepartment" class="form-select" required>
+                      <option value="">Loading departments...</option>
+                    </select>
+                  </div>
 
-                      <option>400</option>
+                  <div class="col-md-3 mb-3">
+                    <label class="form-label">Semester</label>
 
-                      <option>500</option>
+                    <select id="courseSemester" class="form-select" required>
+                      <option value="">Select Semester</option>
+                      <option value="First">First</option>
+                      <option value="Second">Second</option>
                     </select>
                   </div>
                 </div>
@@ -182,13 +201,16 @@
                   <div class="col-md-3">
                     <button type="submit" class="btn btn-primary w-100">
                       <i class="bi bi-save"></i>
-
                       Save Course
                     </button>
                   </div>
 
                   <div class="col-md-3">
-                    <button type="reset" class="btn btn-secondary w-100">
+                    <button
+                      type="button"
+                      id="resetCourseBtn"
+                      class="btn btn-secondary w-100"
+                    >
                       Reset
                     </button>
                   </div>
@@ -197,11 +219,12 @@
             </div>
           </div>
 
+          <!-- COURSE LIST -->
           <div class="card shadow border-0 mt-4">
             <div
-              class="card-header bg-dark text-white d-flex justify-content-between"
+              class="card-header bg-dark text-white d-flex justify-content-between align-items-center"
             >
-              <h5>Course List</h5>
+              <h5 class="mb-0">Course List</h5>
 
               <input
                 type="text"
@@ -213,17 +236,15 @@
 
             <div class="card-body">
               <div class="table-responsive">
-                <table class="table table-hover">
+                <table class="table table-hover align-middle">
                   <thead class="table-primary">
                     <tr>
                       <th>Code</th>
-
                       <th>Title</th>
-
                       <th>Unit</th>
-
                       <th>Level</th>
-
+                      <th>Department</th>
+                      <th>Semester</th>
                       <th width="170">Actions</th>
                     </tr>
                   </thead>

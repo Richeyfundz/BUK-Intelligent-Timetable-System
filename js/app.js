@@ -7,36 +7,38 @@ loginForm.addEventListener("submit", async function (e) {
   const password = document.getElementById("password").value.trim();
 
   try {
-    const response = await fetch("http://localhost:5000/api/auth/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const response = await fetch(
+      "https://buk-intelligent-timetable-system-production.up.railway.app/api/auth/login",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username,
+          password,
+        }),
       },
-      body: JSON.stringify({
-        username,
-        password,
-      }),
-    });
+    );
 
-    const data = await response.json();
+    ```
+const data = await response.json();
 
-    if (data.success) {
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
+if (data.success) {
+  localStorage.setItem("token", data.token);
+  localStorage.setItem("user", JSON.stringify(data.user));
+  localStorage.setItem("loggedIn", "true");
+  localStorage.setItem("username", data.user.username);
 
-      // Keep the existing page authentication system working
-      localStorage.setItem("loggedIn", "true");
-      localStorage.setItem("username", data.user.username);
+  alert("Login Successful!");
 
-      alert("Login Successful!");
-
-      window.location.href = "pages/dashboard.html";
-    } else {
-      alert(data.message);
-    }
+  window.location.href = "pages/dashboard.html";
+} else {
+  alert(data.message || "Login failed.");
+}
+```;
   } catch (error) {
     console.error(error);
-
     alert("Unable to connect to the server.");
   }
 });

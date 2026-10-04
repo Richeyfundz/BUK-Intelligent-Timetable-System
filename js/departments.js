@@ -4,8 +4,10 @@
 // MySQL API Version
 // =============================================
 
-const API_URL = "http://localhost:5000/api/departments";
-const FACULTY_API_URL = "http://localhost:5000/api/faculties";
+const API_URL =
+  "https://buk-intelligent-timetable-system-production.up.railway.app/api/departments";
+const FACULTY_API_URL =
+  "https://buk-intelligent-timetable-system-production.up.railway.app/api/faculties";
 
 console.log("DEPARTMENTS.JS LOADED");
 
