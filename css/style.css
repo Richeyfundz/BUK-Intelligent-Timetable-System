@@ -1,0 +1,237 @@
+/* ==========================================
+   BUK Intelligent Timetable Management System
+   Main Stylesheet
+========================================== */
+
+:root {
+  --primary: #0056a6;
+  --primary-light: #0d6efd;
+  --gold: #f4b400;
+  --white: #ffffff;
+  --background: #f5f7fb;
+  --text: #2c3e50;
+  --shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  background: var(--background);
+}
+
+/* ===========================
+   LOGIN PAGE
+=========================== */
+
+.login-wrapper {
+  min-height: 100vh;
+
+  display: flex;
+
+  justify-content: center;
+
+  align-items: center;
+
+  padding: 40px;
+}
+
+.login-card {
+  width: 100%;
+
+  max-width: 430px;
+
+  background: #fff;
+
+  border-radius: 18px;
+
+  padding: 35px;
+
+  box-shadow: var(--shadow);
+}
+
+.login-logo {
+  width: 90px;
+}
+
+.btn-primary {
+  background: var(--primary);
+
+  border: none;
+}
+
+.btn-primary:hover {
+  background: var(--primary-light);
+}
+
+/* ===========================
+   DASHBOARD
+=========================== */
+
+.wrapper {
+  display: flex;
+}
+
+.sidebar {
+  width: 260px;
+
+  height: 100vh;
+
+  background: var(--primary);
+
+  color: white;
+
+  position: fixed;
+
+  left: 0;
+
+  top: 0;
+
+  overflow-y: auto;
+
+  overflow-x: hidden;
+
+  z-index: 1000;
+}
+
+/* Sidebar Scrollbar */
+
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.5);
+
+  border-radius: 10px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-header {
+  padding: 25px;
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.sidebar-logo {
+  width: 80px;
+}
+
+.sidebar-menu {
+  list-style: none;
+
+  margin: 0;
+
+  padding: 0;
+}
+
+.sidebar-menu li {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-menu li a {
+  color: white;
+
+  text-decoration: none;
+
+  display: block;
+
+  padding: 15px 20px;
+
+  transition: 0.3s;
+}
+
+.sidebar-menu li a:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.sidebar-menu .active a {
+  background: var(--gold);
+
+  color: #000;
+
+  font-weight: bold;
+}
+
+.main-content {
+  margin-left: 260px;
+
+  width: calc(100% - 260px);
+}
+
+.topbar {
+  background: white;
+
+  padding: 20px 30px;
+
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: center;
+
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.dashboard-card {
+  border-radius: 15px;
+}
+
+.dashboard-icon {
+  font-size: 45px;
+}
+
+/* ===========================
+   FOOTER
+=========================== */
+
+footer {
+  background: white;
+}
+
+/* ===========================
+   RESPONSIVE
+=========================== */
+
+@media (max-width: 992px) {
+  .sidebar {
+    width: 220px;
+  }
+
+  .main-content {
+    margin-left: 220px;
+
+    width: calc(100% - 220px);
+  }
+}
+
+@media (max-width: 768px) {
+  .wrapper {
+    display: block;
+  }
+
+  .sidebar {
+    position: relative;
+
+    width: 100%;
+
+    min-height: auto;
+  }
+
+  .main-content {
+    margin-left: 0;
+
+    width: 100%;
+  }
+
+  .topbar {
+    padding: 15px;
+  }
+}

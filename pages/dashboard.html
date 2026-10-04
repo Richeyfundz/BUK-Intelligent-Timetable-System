@@ -1,0 +1,450 @@
+<!-- ===========================================
+pages/dashboard.html
+PART 1
+=========================================== -->
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Dashboard | BUK Intelligent Timetable Management System</title>
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="../css/style.css" />
+  </head>
+
+  <body>
+    <div class="wrapper">
+      <!-- ======================================
+SIDEBAR
+====================================== -->
+      html
+      <aside class="sidebar">
+        <div class="sidebar-header text-center">
+          <img src="../images/buk-logo.png" class="sidebar-logo" />
+
+          <h4 class="mt-3">BUK ITMS</h4>
+          <small>Bayero University Kano</small>
+        </div>
+
+        <ul class="sidebar-menu">
+          <li>
+            <a href="dashboard.html">
+              <i class="bi bi-speedometer2"></i>
+              Dashboard
+            </a>
+          </li>
+
+          <li>
+            <a href="faculty.html">
+              <i class="bi bi-diagram-3"></i>
+              Faculties
+            </a>
+          </li>
+
+          <li>
+            <a href="departments.html">
+              <i class="bi bi-building"></i>
+              Departments
+            </a>
+          </li>
+
+          <li>
+            <a href="courses.html">
+              <i class="bi bi-book"></i>
+              Courses
+            </a>
+          </li>
+
+          <li>
+            <a href="lecturers.html">
+              <i class="bi bi-person-workspace"></i>
+              Lecturers
+            </a>
+          </li>
+
+          <li>
+            <a href="students.html">
+              <i class="bi bi-mortarboard"></i>
+              Students
+            </a>
+          </li>
+
+          <li>
+            <a href="venues.html">
+              <i class="bi bi-bank"></i>
+              Venues
+            </a>
+          </li>
+
+          <li>
+            <a href="ai-timetable.html">
+              <i class="bi bi-cpu"></i>
+              AI Timetable
+            </a>
+          </li>
+
+          <li class="active">
+            <a href="exam-timetable.html">
+              <i class="bi bi-calendar-check"></i>
+              Exam Timetable
+            </a>
+          </li>
+
+          <li>
+            <a href="reports.html">
+              <i class="bi bi-bar-chart"></i>
+              Reports
+            </a>
+          </li>
+
+          <li>
+            <a href="settings.html">
+              <i class="bi bi-gear"></i>
+              Settings
+            </a>
+          </li>
+
+          <li>
+            <a href="about-system.html">
+              <i class="bi bi-info-circle"></i>
+              About System
+            </a>
+          </li>
+
+          <li>
+            <a href="about-developer.html">
+              <i class="bi bi-person-badge"></i>
+              About Developer
+            </a>
+          </li>
+
+          <li>
+            <a href="../index.html" id="logoutBtn">
+              <i class="bi bi-box-arrow-left"></i>
+              Logout
+            </a>
+          </li>
+        </ul>
+      </aside>
+
+      <!-- ======================================
+MAIN CONTENT
+====================================== -->
+
+      <main class="main-content">
+        <nav class="topbar">
+          <div>
+            <h3>Dashboard</h3>
+
+            <small>
+              Welcome to BUK Intelligent Timetable Management System
+            </small>
+          </div>
+
+          <div>
+            <span id="currentDate"></span>
+          </div>
+        </nav>
+
+        <div class="container-fluid mt-4">
+          <div class="row g-4">
+            <div class="col-lg-4 col-md-6">
+              <div class="card shadow dashboard-card">
+                <div class="card-body">
+                  <div class="d-flex justify-content-between">
+                    <div>
+                      <h6>Faculties</h6>
+
+                      <h2 id="facultyCount">0</h2>
+                    </div>
+
+                    <i class="bi bi-diagram-3 dashboard-icon text-primary"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6">
+              <div class="card shadow dashboard-card">
+                <div class="card-body">
+                  <div class="d-flex justify-content-between">
+                    <div>
+                      <h6>Departments</h6>
+
+                      <h2 id="departmentCount">0</h2>
+                    </div>
+
+                    <i class="bi bi-building dashboard-icon text-success"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6">
+              <div class="card shadow dashboard-card">
+                <div class="card-body">
+                  <div class="d-flex justify-content-between">
+                    <div>
+                      <h6>Courses</h6>
+
+                      <h2 id="courseCount">0</h2>
+                    </div>
+
+                    <i class="bi bi-book dashboard-icon text-warning"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- ===========================================
+pages/dashboard.html
+PART 2
+=========================================== -->
+
+            <div class="col-lg-4 col-md-6">
+              <div class="card shadow dashboard-card">
+                <div class="card-body">
+                  <div class="d-flex justify-content-between">
+                    <div>
+                      <h6>Lecturers</h6>
+
+                      <h2 id="lecturerCount">0</h2>
+                    </div>
+
+                    <i
+                      class="bi bi-person-workspace dashboard-icon text-danger"
+                    ></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6">
+              <div class="card shadow dashboard-card">
+                <div class="card-body">
+                  <div class="d-flex justify-content-between">
+                    <div>
+                      <h6>Students</h6>
+
+                      <h2 id="studentCount">0</h2>
+                    </div>
+
+                    <i class="bi bi-mortarboard dashboard-icon text-info"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6">
+              <div class="card shadow dashboard-card">
+                <div class="card-body">
+                  <div class="d-flex justify-content-between">
+                    <div>
+                      <h6>Venues</h6>
+
+                      <h2 id="venueCount">0</h2>
+                    </div>
+
+                    <i class="bi bi-bank dashboard-icon text-secondary"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ======================================
+QUICK ACTIONS
+====================================== -->
+
+          <div class="row mt-4">
+            <div class="col-lg-8">
+              <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                  <h5 class="mb-0">Quick Actions</h5>
+                </div>
+
+                <div class="card-body">
+                  <div class="row g-3">
+                    <div class="col-md-4">
+                      <a href="faculty.html" class="btn btn-primary w-100">
+                        <i class="bi bi-diagram-3"></i>
+
+                        Faculty
+                      </a>
+                    </div>
+
+                    <div class="col-md-4">
+                      <a href="departments.html" class="btn btn-success w-100">
+                        <i class="bi bi-building"></i>
+
+                        Departments
+                      </a>
+                    </div>
+
+                    <div class="col-md-4">
+                      <a href="courses.html" class="btn btn-warning w-100">
+                        <i class="bi bi-book"></i>
+
+                        Courses
+                      </a>
+                    </div>
+
+                    <div class="col-md-4">
+                      <a href="lecturers.html" class="btn btn-danger w-100">
+                        <i class="bi bi-person-workspace"></i>
+
+                        Lecturers
+                      </a>
+                    </div>
+
+                    <div class="col-md-4">
+                      <a
+                        href="students.html"
+                        class="btn btn-info w-100 text-white"
+                      >
+                        <i class="bi bi-mortarboard"></i>
+
+                        Students
+                      </a>
+                    </div>
+
+                    <div class="col-md-4">
+                      <a href="venues.html" class="btn btn-secondary w-100">
+                        <i class="bi bi-bank"></i>
+
+                        Venues
+                      </a>
+                    </div>
+
+                    <div class="col-md-6">
+                      <a href="ai-timetable.html" class="btn btn-dark w-100">
+                        <i class="bi bi-cpu"></i>
+
+                        Generate AI Timetable
+                      </a>
+                    </div>
+
+                    <div class="col-md-6">
+                      <a
+                        href="reports.html"
+                        class="btn btn-outline-primary w-100"
+                      >
+                        <i class="bi bi-bar-chart"></i>
+
+                        Reports
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-lg-4">
+              <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                  <h5 class="mb-0">AI Generator Status</h5>
+                </div>
+
+                <div class="card-body text-center">
+                  <i class="bi bi-cpu display-3 text-success"></i>
+
+                  <h5 class="mt-3">System Ready</h5>
+
+                  <p>No timetable has been generated yet.</p>
+
+                  <button class="btn btn-success">Generate Timetable</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- ===========================================
+pages/dashboard.html
+PART 3 (FINAL)
+=========================================== -->
+
+          <div class="row mt-4">
+            <div class="col-lg-12">
+              <div class="card shadow">
+                <div class="card-header bg-dark text-white">
+                  <h5 class="mb-0">Recent Activities</h5>
+                </div>
+
+                <div class="card-body">
+                  <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                      <thead>
+                        <tr>
+                          <th>Date</th>
+
+                          <th>Activity</th>
+
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        <tr>
+                          <td id="todayDate"></td>
+
+                          <td>System Initialized</td>
+
+                          <td>
+                            <span class="badge bg-success"> Completed </span>
+                          </td>
+                        </tr>
+
+                        <tr>
+                          <td>-</td>
+
+                          <td>No recent timetable generated</td>
+
+                          <td>
+                            <span class="badge bg-warning"> Pending </span>
+                          </td>
+                        </tr>
+
+                        <tr>
+                          <td>-</td>
+
+                          <td>No reports available</td>
+
+                          <td>
+                            <span class="badge bg-secondary"> Waiting </span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <footer class="footer text-center py-3 mt-4">
+          <p class="mb-0">
+            © 2026 Bayero University Kano
+
+            <br />
+
+            BUK Intelligent Timetable Management System
+          </p>
+        </footer>
+      </main>
+    </div>
+
+    <script src="../js/dashboard.js"></script>
+  </body>
+</html>

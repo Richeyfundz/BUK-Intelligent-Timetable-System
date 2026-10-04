@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Faculty | BUK Intelligent Timetable Management System</title>
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="../css/style.css" />
+  </head>
+
+  <body>
+    <div class="wrapper">
+      <!-- ================= SIDEBAR ================= -->
+
+      <aside class="sidebar">
+        <div class="sidebar-header text-center">
+          <img src="../images/buk-logo.png" class="sidebar-logo" />
+
+          <h4 class="mt-3">BUK ITMS</h4>
+
+          <small>Bayero University Kano</small>
+        </div>
+
+        <ul class="sidebar-menu">
+          <li>
+            <a href="dashboard.html"
+              ><i class="bi bi-speedometer2"></i> Dashboard</a
+            >
+          </li>
+
+          <li class="active">
+            <a href="faculty.html"><i class="bi bi-diagram-3"></i> Faculties</a>
+          </li>
+
+          <li>
+            <a href="departments.html"
+              ><i class="bi bi-building"></i> Departments</a
+            >
+          </li>
+
+          <li>
+            <a href="courses.html"><i class="bi bi-book"></i> Courses</a>
+          </li>
+
+          <li>
+            <a href="lecturers.html"
+              ><i class="bi bi-person-workspace"></i> Lecturers</a
+            >
+          </li>
+
+          <li>
+            <a href="students.html"
+              ><i class="bi bi-mortarboard"></i> Students</a
+            >
+          </li>
+
+          <li>
+            <a href="venues.html"><i class="bi bi-bank"></i> Venues</a>
+          </li>
+
+          <li>
+            <a href="ai-timetable.html"
+              ><i class="bi bi-cpu"></i> AI Timetable</a
+            >
+          </li>
+
+          <li>
+            <a href="exam-timetable.html"
+              ><i class="bi bi-calendar-check"></i> Exam Timetable</a
+            >
+          </li>
+
+          <li>
+            <a href="reports.html"><i class="bi bi-bar-chart"></i> Reports</a>
+          </li>
+
+          <li>
+            <a href="settings.html"><i class="bi bi-gear"></i> Settings</a>
+          </li>
+          <li>
+            <a href="about-system.html">
+              <i class="bi bi-info-circle"></i>
+
+              About System
+            </a>
+          </li>
+
+          <li>
+            <a href="about-developer.html">
+              <i class="bi bi-person-badge"></i>
+
+              About Developer
+            </a>
+          </li>
+
+          <li>
+            <a href="../index.html" id="logoutBtn"
+              ><i class="bi bi-box-arrow-left"></i> Logout</a
+            >
+          </li>
+        </ul>
+      </aside>
+
+      <!-- ================= MAIN ================= -->
+
+      <main class="main-content">
+        <nav class="topbar">
+          <div>
+            <h3>Faculty Management</h3>
+
+            <small>Manage University Faculties</small>
+          </div>
+
+          <span id="currentDate"></span>
+        </nav>
+
+        <div class="container-fluid mt-4">
+          <div class="card shadow border-0">
+            <div class="card-header bg-primary text-white">
+              <h5 class="mb-0">
+                <i class="bi bi-plus-circle"></i>
+
+                Add New Faculty
+              </h5>
+            </div>
+
+            <div class="card-body">
+              <form id="facultyForm">
+                <div class="row">
+                  <div class="col-md-3 mb-3">
+                    <label>Faculty Code</label>
+
+                    <input
+                      type="text"
+                      id="facultyCode"
+                      class="form-control"
+                      required
+                    />
+                  </div>
+
+                  <div class="col-md-5 mb-3">
+                    <label>Faculty Name</label>
+
+                    <input
+                      type="text"
+                      id="facultyName"
+                      class="form-control"
+                      required
+                    />
+                  </div>
+
+                  <div class="col-md-4 mb-3">
+                    <label>Dean</label>
+
+                    <input
+                      type="text"
+                      id="facultyDean"
+                      class="form-control"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="col-md-3">
+                    <button class="btn btn-primary w-100" type="submit">
+                      <i class="bi bi-save"></i>
+
+                      Save Faculty
+                    </button>
+                  </div>
+
+                  <div class="col-md-3">
+                    <button type="reset" class="btn btn-secondary w-100">
+                      Reset
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <div class="card shadow border-0 mt-4">
+            <div
+              class="card-header bg-dark text-white d-flex justify-content-between align-items-center"
+            >
+              <h5 class="mb-0">Faculty List</h5>
+
+              <input
+                type="text"
+                id="searchFaculty"
+                class="form-control w-25"
+                placeholder="Search Faculty"
+              />
+            </div>
+
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table table-hover table-striped">
+                  <thead class="table-primary">
+                    <tr>
+                      <th>Faculty Code</th>
+
+                      <th>Faculty Name</th>
+
+                      <th>Dean</th>
+
+                      <th width="170">Actions</th>
+                    </tr>
+                  </thead>
+
+                  <tbody id="facultyTable"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <footer class="text-center py-3">
+          © 2026 BUK Intelligent Timetable Management System
+        </footer>
+      </main>
+    </div>
+
+    <script src="../js/faculty.js"></script>
+  </body>
+</html>
