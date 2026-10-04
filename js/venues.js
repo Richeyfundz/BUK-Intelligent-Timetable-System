@@ -1,178 +1,311 @@
 // =============================================
 // BUK Intelligent Timetable Management System
-// Venues Module
+// Venues Module - Railway API Version
+// =============================================
+
+const API_URL =
+  "https://buk-intelligent-timetable-system-production.up.railway.app/api/venues";
+
+let editingVenueId = null;
+
+// =============================================
+// Page Initialization
 // =============================================
 
 document.addEventListener("DOMContentLoaded", function () {
   // Login Check
-
   if (localStorage.getItem("loggedIn") !== "true") {
     window.location.href = "../index.html";
-
     return;
   }
 
   // Current Date
-
   const currentDate = document.getElementById("currentDate");
 
   if (currentDate) {
     currentDate.textContent = new Date().toLocaleDateString("en-GB", {
       weekday: "long",
-
       day: "numeric",
-
       month: "long",
-
       year: "numeric",
     });
   }
 
   loadVenues();
 
-  document.getElementById("venueForm").addEventListener("submit", saveVenue);
+  const venueForm = document.getElementById("venueForm");
 
-  document.getElementById("searchVenue").addEventListener("keyup", searchVenue);
+  if (venueForm) {
+    venueForm.addEventListener("submit", saveVenue);
+  }
 
-  document.getElementById("logoutBtn").addEventListener("click", logout);
+  const searchInput = document.getElementById("searchVenue");
+
+  if (searchInput) {
+    searchInput.addEventListener("keyup", searchVenue);
+  }
+
+  const logoutBtn = document.getElementById("logoutBtn");
+
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", logout);
+  }
 });
+
+// =============================================
+// Get API Data
+// =============================================
+
+function getDataArray(result) {
+  if (Array.isArray(result)) {
+    return result;
+  }
+
+  if (result && Array.isArray(result.data)) {
+    return result.data;
+  }
+
+  if (result && Array.isArray(result.venues)) {
+    return result.venues;
+  }
+
+  return [];
+}
 
 // =============================================
 // Save Venue
 // =============================================
 
-function saveVenue(e) {
+async function saveVenue(e) {
   e.preventDefault();
 
-  let venues = JSON.parse(localStorage.getItem("venues")) || [];
+  const code = document.getElementById("venueCode").value.trim();
+  const name = document.getElementById("venueName").value.trim();
+  const capacity = document.getElementById("capacity").value;
+  const type = document.getElementById("venueType").value;
 
-  const venue = {
-    id: Date.now(),
+  if (!code || !name || !capacity || !type) {
+    alert("Please fill in all venue details.");
+    return;
+  }
 
-    code: document.getElementById("venueCode").value,
-
-    name: document.getElementById("venueName").value,
-
-    capacity: document.getElementById("capacity").value,
-
-    type: document.getElementById("venueType").value,
+  const venueData = {
+    venue_code: code,
+    venue_name: name,
+    capacity: Number(capacity),
+    venue_type: type,
   };
 
-  venues.push(venue);
+  try {
+    let response;
 
-  localStorage.setItem("venues", JSON.stringify(venues));
+    if (editingVenueId) {
+      // UPDATE
+      response = await fetch(`${API_URL}/${editingVenueId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(venueData),
+      });
+    } else {
+      // CREATE
+      response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(venueData),
+      });
+    }
 
-  document.getElementById("venueForm").reset();
+    const result = await response.json();
 
-  loadVenues();
+    if (!response.ok) {
+      throw new Error(result.message || result.error || "Failed to save venue");
+    }
+
+    alert(
+      editingVenueId
+        ? "Venue updated successfully."
+        : "Venue added successfully.",
+    );
+
+    editingVenueId = null;
+
+    document.getElementById("venueForm").reset();
+
+    loadVenues();
+  } catch (error) {
+    console.error("Error saving venue:", error);
+
+    alert("Failed to save venue: " + error.message);
+  }
 }
 
 // =============================================
 // Load Venues
 // =============================================
 
-function loadVenues() {
-  let venues = JSON.parse(localStorage.getItem("venues")) || [];
-
+async function loadVenues() {
   const table = document.getElementById("venueTable");
 
-  table.innerHTML = "";
+  if (!table) return;
 
-  venues.forEach(function (venue) {
-    table.innerHTML += `
+  table.innerHTML = `
+    <tr>
+      <td colspan="5" class="text-center">
+        Loading venues...
+      </td>
+    </tr>
+  `;
 
+  try {
+    const response = await fetch(API_URL);
 
+    if (!response.ok) {
+      throw new Error("Failed to load venues");
+    }
+
+    const result = await response.json();
+
+    const venues = getDataArray(result);
+
+    table.innerHTML = "";
+
+    if (venues.length === 0) {
+      table.innerHTML = `
         <tr>
-
-
-        <td>${venue.code}</td>
-
-
-        <td>${venue.name}</td>
-
-
-        <td>${venue.capacity}</td>
-
-
-        <td>${venue.type}</td>
-
-
-
-        <td>
-
-
-        <button
-        class="btn btn-warning btn-sm"
-        onclick="editVenue(${venue.id})">
-
-
-        <i class="bi bi-pencil-square"></i>
-
-
-        </button>
-
-
-
-
-        <button
-        class="btn btn-danger btn-sm"
-        onclick="deleteVenue(${venue.id})">
-
-
-        <i class="bi bi-trash"></i>
-
-
-        </button>
-
-
-        </td>
-
-
+          <td colspan="5" class="text-center">
+            No venues found.
+          </td>
         </tr>
+      `;
+      return;
+    }
 
+    venues.forEach(function (venue) {
+      const code = venue.venue_code || venue.code || "";
 
-        `;
-  });
+      const name = venue.venue_name || venue.name || "";
+
+      const capacity = venue.capacity || "";
+
+      const type = venue.venue_type || venue.type || "";
+
+      table.innerHTML += `
+        <tr>
+          <td>${escapeHTML(code)}</td>
+
+          <td>${escapeHTML(name)}</td>
+
+          <td>${escapeHTML(capacity)}</td>
+
+          <td>${escapeHTML(type)}</td>
+
+          <td>
+            <button
+              class="btn btn-warning btn-sm"
+              onclick="editVenue(${venue.id})"
+              title="Edit Venue"
+            >
+              <i class="bi bi-pencil-square"></i>
+            </button>
+
+            <button
+              class="btn btn-danger btn-sm"
+              onclick="deleteVenue(${venue.id})"
+              title="Delete Venue"
+            >
+              <i class="bi bi-trash"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    });
+  } catch (error) {
+    console.error("Error loading venues:", error);
+
+    table.innerHTML = `
+      <tr>
+        <td colspan="5" class="text-center text-danger">
+          Failed to load venues.
+        </td>
+      </tr>
+    `;
+  }
 }
 
 // =============================================
 // Delete Venue
 // =============================================
 
-function deleteVenue(id) {
-  if (!confirm("Delete this Venue?")) return;
+async function deleteVenue(id) {
+  if (!confirm("Delete this venue?")) {
+    return;
+  }
 
-  let venues = JSON.parse(localStorage.getItem("venues")) || [];
+  try {
+    const response = await fetch(`${API_URL}/${id}`, {
+      method: "DELETE",
+    });
 
-  venues = venues.filter(function (venue) {
-    return venue.id !== id;
-  });
+    const result = await response.json();
 
-  localStorage.setItem("venues", JSON.stringify(venues));
+    if (!response.ok) {
+      throw new Error(
+        result.message || result.error || "Failed to delete venue",
+      );
+    }
 
-  loadVenues();
+    alert("Venue deleted successfully.");
+
+    loadVenues();
+  } catch (error) {
+    console.error("Error deleting venue:", error);
+
+    alert("Failed to delete venue: " + error.message);
+  }
 }
 
 // =============================================
 // Edit Venue
 // =============================================
 
-function editVenue(id) {
-  let venues = JSON.parse(localStorage.getItem("venues")) || [];
+async function editVenue(id) {
+  try {
+    const response = await fetch(`${API_URL}/${id}`);
 
-  const venue = venues.find(function (item) {
-    return item.id === id;
-  });
+    if (!response.ok) {
+      throw new Error("Failed to load venue");
+    }
 
-  document.getElementById("venueCode").value = venue.code;
+    const result = await response.json();
 
-  document.getElementById("venueName").value = venue.name;
+    const venue = result.data || result.venue || result;
 
-  document.getElementById("capacity").value = venue.capacity;
+    editingVenueId = venue.id || id;
 
-  document.getElementById("venueType").value = venue.type;
+    document.getElementById("venueCode").value =
+      venue.venue_code || venue.code || "";
 
-  deleteVenue(id);
+    document.getElementById("venueName").value =
+      venue.venue_name || venue.name || "";
+
+    document.getElementById("capacity").value = venue.capacity || "";
+
+    document.getElementById("venueType").value =
+      venue.venue_type || venue.type || "";
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  } catch (error) {
+    console.error("Error loading venue:", error);
+
+    alert("Failed to load venue: " + error.message);
+  }
 }
 
 // =============================================
@@ -180,7 +313,11 @@ function editVenue(id) {
 // =============================================
 
 function searchVenue() {
-  const keyword = document.getElementById("searchVenue").value.toLowerCase();
+  const searchInput = document.getElementById("searchVenue");
+
+  if (!searchInput) return;
+
+  const keyword = searchInput.value.toLowerCase();
 
   const rows = document.querySelectorAll("#venueTable tr");
 
@@ -199,8 +336,26 @@ function logout(e) {
   e.preventDefault();
 
   localStorage.removeItem("loggedIn");
-
   localStorage.removeItem("username");
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
 
   window.location.href = "../index.html";
+}
+
+// =============================================
+// Escape HTML
+// =============================================
+
+function escapeHTML(value) {
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }

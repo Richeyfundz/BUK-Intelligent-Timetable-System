@@ -1,25 +1,32 @@
-// =====================================================
-// BUK INTELLIGENT TIMETABLE MANAGEMENT SYSTEM
-// SETTINGS MODULE
-// =====================================================
+javascript;
+// =============================================
+// BUK Intelligent Timetable Management System
+// Reports Module - Railway MySQL API Version
+// =============================================
 
-const API_URL = "http://localhost:5000/api/users";
+const API_BASE_URL =
+  "https://buk-intelligent-timetable-system-production.up.railway.app/api";
 
-let users = [];
-let isCreatingNewUser = false;
-
-// =====================================================
-// PAGE LOAD
-// =====================================================
+const COURSES_API_URL = `${API_BASE_URL}/courses`;
+const LECTURERS_API_URL = `${API_BASE_URL}/lecturers`;
+const STUDENTS_API_URL = `${API_BASE_URL}/students`;
+const VENUES_API_URL = `${API_BASE_URL}/venues`;
+const TIMETABLE_API_URL = `${API_BASE_URL}/timetables`;
 
 document.addEventListener("DOMContentLoaded", function () {
+  // =============================================
   // Login Check
+  // =============================================
+
   if (localStorage.getItem("loggedIn") !== "true") {
     window.location.href = "../index.html";
     return;
   }
 
+  // =============================================
   // Current Date
+  // =============================================
+
   const currentDate = document.getElementById("currentDate");
 
   if (currentDate) {
@@ -31,66 +38,18 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // Load Users
-  loadUsers();
+  // =============================================
+  // Load Report Data
+  // =============================================
 
-  // User Selection
-  const userSelect = document.getElementById("userSelect");
+  loadStatistics();
 
-  if (userSelect) {
-    userSelect.addEventListener("change", loadSelectedUser);
-  }
+  loadTimetableReport();
 
-  // New User
-  const newUserBtn = document.getElementById("newUserBtn");
-
-  if (newUserBtn) {
-    newUserBtn.addEventListener("click", prepareNewUser);
-  }
-
-  // Save User
-  const saveUserBtn = document.getElementById("saveUserBtn");
-
-  if (saveUserBtn) {
-    saveUserBtn.addEventListener("click", createUser);
-  }
-
-  // Update User
-  const updateUserBtn = document.getElementById("updateUserBtn");
-
-  if (updateUserBtn) {
-    updateUserBtn.addEventListener("click", updateUser);
-  }
-
-  // Toggle Status
-  const toggleStatusBtn = document.getElementById("toggleStatusBtn");
-
-  if (toggleStatusBtn) {
-    toggleStatusBtn.addEventListener("click", toggleUserStatus);
-  }
-
-  // Delete User
-  const deleteUserBtn = document.getElementById("deleteUserBtn");
-
-  if (deleteUserBtn) {
-    deleteUserBtn.addEventListener("click", deleteUser);
-  }
-
-  // Backup
-  const backupBtn = document.getElementById("backupBtn");
-
-  if (backupBtn) {
-    backupBtn.addEventListener("click", backupData);
-  }
-
-  // Clear
-  const clearBtn = document.getElementById("clearBtn");
-
-  if (clearBtn) {
-    clearBtn.addEventListener("click", clearData);
-  }
-
+  // =============================================
   // Logout
+  // =============================================
+
   const logoutBtn = document.getElementById("logoutBtn");
 
   if (logoutBtn) {
@@ -98,444 +57,242 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 });
 
-// =====================================================
-// LOAD USERS
-// =====================================================
+// =============================================
+// Load Statistics
+// =============================================
 
-async function loadUsers() {
-  const userSelect = document.getElementById("userSelect");
-
-  if (!userSelect) return;
-
+async function loadStatistics() {
   try {
-    const response = await fetch(API_URL);
+    const [
+      coursesResponse,
+      lecturersResponse,
+      studentsResponse,
+      venuesResponse,
+    ] = await Promise.all([
+      fetch(COURSES_API_URL),
+      fetch(LECTURERS_API_URL),
+      fetch(STUDENTS_API_URL),
+      fetch(VENUES_API_URL),
+    ]);
 
-    if (!response.ok) {
-      throw new Error("Failed to load users");
+    const coursesResult = await coursesResponse.json();
+    const lecturersResult = await lecturersResponse.json();
+    const studentsResult = await studentsResponse.json();
+    const venuesResult = await venuesResponse.json();
+
+    const courses = getDataArray(coursesResult);
+    const lecturers = getDataArray(lecturersResult);
+    const students = getDataArray(studentsResult);
+    const venues = getDataArray(venuesResult);
+
+    const reportCourses = document.getElementById("reportCourses");
+    const reportLecturers = document.getElementById("reportLecturers");
+    const reportStudents = document.getElementById("reportStudents");
+    const reportVenues = document.getElementById("reportVenues");
+
+    if (reportCourses) {
+      reportCourses.innerHTML = courses.length;
     }
 
-    const result = await response.json();
-
-    if (!result.success) {
-      alert(result.message || "Failed to load users.");
-      return;
+    if (reportLecturers) {
+      reportLecturers.innerHTML = lecturers.length;
     }
 
-    users = result.data || [];
+    if (reportStudents) {
+      reportStudents.innerHTML = students.length;
+    }
 
-    userSelect.innerHTML = '<option value="">Select a user</option>';
-
-    users.forEach(function (user) {
-      const option = document.createElement("option");
-
-      option.value = user.id;
-
-      option.textContent = user.username + " - " + user.full_name;
-
-      userSelect.appendChild(option);
-    });
+    if (reportVenues) {
+      reportVenues.innerHTML = venues.length;
+    }
   } catch (error) {
-    console.error("Load users error:", error);
+    console.error("Report Statistics Error:", error);
 
-    alert("Unable to connect to the server.");
+    setReportCount("reportCourses", 0);
+    setReportCount("reportLecturers", 0);
+    setReportCount("reportStudents", 0);
+    setReportCount("reportVenues", 0);
   }
 }
 
-// =====================================================
-// PREPARE NEW USER
-// =====================================================
+// =============================================
+// Load Timetable Report
+// =============================================
 
-function prepareNewUser() {
-  isCreatingNewUser = true;
+async function loadTimetableReport() {
+  const table = document.getElementById("reportTable");
 
-  document.getElementById("userSelect").value = "";
-
-  clearUserFields();
-
-  document.getElementById("username").focus();
-
-  alert("Enter the new user's details, then click Save User.");
-}
-
-// =====================================================
-// CLEAR USER FIELDS
-// =====================================================
-
-function clearUserFields() {
-  document.getElementById("username").value = "";
-
-  document.getElementById("fullName").value = "";
-
-  document.getElementById("email").value = "";
-
-  document.getElementById("password").value = "";
-
-  document.getElementById("role").value = "Admin";
-
-  document.getElementById("status").value = "Active";
-}
-
-// =====================================================
-// LOAD SELECTED USER
-// =====================================================
-
-function loadSelectedUser() {
-  const userSelect = document.getElementById("userSelect");
-
-  const selectedId = userSelect.value;
-
-  if (!selectedId) {
-    isCreatingNewUser = true;
-    clearUserFields();
-    return;
-  }
-
-  isCreatingNewUser = false;
-
-  const user = users.find(function (item) {
-    return String(item.id) === String(selectedId);
-  });
-
-  if (!user) return;
-
-  document.getElementById("username").value = user.username || "";
-
-  document.getElementById("fullName").value = user.full_name || "";
-
-  document.getElementById("email").value = user.email || "";
-
-  document.getElementById("password").value = "";
-
-  document.getElementById("role").value = user.role || "Admin";
-
-  document.getElementById("status").value = user.status || "Active";
-}
-
-// =====================================================
-// CREATE USER
-// =====================================================
-
-async function createUser() {
-  const username = document.getElementById("username").value.trim();
-
-  const fullName = document.getElementById("fullName").value.trim();
-
-  const email = document.getElementById("email").value.trim();
-
-  const password = document.getElementById("password").value.trim();
-
-  const role = document.getElementById("role").value;
-
-  const status = document.getElementById("status").value;
-
-  if (!username || !fullName || !email || !password) {
-    alert("Username, full name, email and password are required.");
-
+  if (!table) {
+    console.error("Report table not found.");
     return;
   }
 
   try {
-    const response = await fetch(API_URL, {
-      method: "POST",
-
-      headers: {
-        "Content-Type": "application/json",
-      },
-
-      body: JSON.stringify({
-        username: username,
-        full_name: fullName,
-        email: email,
-        password: password,
-        role: role,
-        status: status,
-      }),
-    });
+    const response = await fetch(TIMETABLE_API_URL);
 
     const result = await response.json();
 
-    if (!response.ok || !result.success) {
-      alert(result.message || "Failed to create user.");
+    console.log("Timetable Report API Response:", result);
+
+    const timetable = getDataArray(result);
+
+    table.innerHTML = "";
+
+    if (timetable.length === 0) {
+      table.innerHTML = `
+        <tr>
+          <td colspan="5" class="text-center text-muted py-4">
+            No timetable records found.
+          </td>
+        </tr>
+      `;
 
       return;
     }
 
-    alert("User created successfully.");
+    timetable.forEach(function (item) {
+      const row = document.createElement("tr");
 
-    await loadUsers();
+      const course =
+        item.course_code || item.course || item.course_title || "N/A";
 
-    clearUserFields();
+      const lecturer =
+        item.lecturer_name || item.lecturer || item.lecturerName || "N/A";
 
-    isCreatingNewUser = true;
-  } catch (error) {
-    console.error("Create user error:", error);
+      const venue = item.venue_name || item.venue || "N/A";
 
-    alert("Unable to connect to the server.");
-  }
-}
+      const day = item.day || "N/A";
 
-// =====================================================
-// UPDATE USER
-// =====================================================
+      let time = "N/A";
 
-async function updateUser() {
-  const userSelect = document.getElementById("userSelect");
+      if (item.start_time && item.end_time) {
+        time = `${formatTime(item.start_time)} - ${formatTime(item.end_time)}`;
+      } else if (item.time) {
+        time = item.time;
+      }
 
-  const id = userSelect.value;
+      row.innerHTML = `
+        <td>
+          ${escapeHTML(course)}
+        </td>
 
-  if (!id) {
-    alert("Please select a user first.");
+        <td>
+          ${escapeHTML(lecturer)}
+        </td>
 
-    return;
-  }
+        <td>
+          ${escapeHTML(venue)}
+        </td>
 
-  const username = document.getElementById("username").value.trim();
+        <td>
+          ${escapeHTML(day)}
+        </td>
 
-  const fullName = document.getElementById("fullName").value.trim();
+        <td>
+          ${escapeHTML(time)}
+        </td>
+      `;
 
-  const email = document.getElementById("email").value.trim();
-
-  const password = document.getElementById("password").value.trim();
-
-  const role = document.getElementById("role").value;
-
-  const status = document.getElementById("status").value;
-
-  if (!username || !fullName || !email) {
-    alert("Username, full name and email are required.");
-
-    return;
-  }
-
-  try {
-    const response = await fetch(API_URL + "/" + id, {
-      method: "PUT",
-
-      headers: {
-        "Content-Type": "application/json",
-      },
-
-      body: JSON.stringify({
-        id: id,
-        username: username,
-        full_name: fullName,
-        email: email,
-        password: password,
-        role: role,
-        status: status,
-      }),
+      table.appendChild(row);
     });
-
-    const result = await response.json();
-
-    if (!response.ok || !result.success) {
-      alert(result.message || "Failed to update user.");
-
-      return;
-    }
-
-    alert("User updated successfully.");
-
-    await loadUsers();
-
-    userSelect.value = id;
-
-    loadSelectedUser();
   } catch (error) {
-    console.error("Update user error:", error);
+    console.error("Timetable Report Error:", error);
 
-    alert("Unable to connect to the server.");
+    table.innerHTML = `
+      <tr>
+        <td colspan="5" class="text-center text-danger py-4">
+          Unable to load timetable report.
+        </td>
+      </tr>
+    `;
   }
 }
 
-// =====================================================
-// ACTIVATE / DEACTIVATE USER
-// =====================================================
+// =============================================
+// Get API Data Array
+// =============================================
 
-async function toggleUserStatus() {
-  const userSelect = document.getElementById("userSelect");
-
-  const id = userSelect.value;
-
-  if (!id) {
-    alert("Please select a user first.");
-
-    return;
+function getDataArray(result) {
+  if (Array.isArray(result)) {
+    return result;
   }
 
-  const user = users.find(function (item) {
-    return String(item.id) === String(id);
-  });
+  if (result && Array.isArray(result.data)) {
+    return result.data;
+  }
 
-  if (!user) return;
+  return [];
+}
 
-  const action = user.status === "Active" ? "deactivate" : "activate";
+// =============================================
+// Set Report Count
+// =============================================
 
-  const confirmed = confirm(
-    "Are you sure you want to " + action + " this user?",
-  );
+function setReportCount(id, value) {
+  const element = document.getElementById(id);
 
-  if (!confirmed) return;
-
-  try {
-    const response = await fetch(API_URL + "/" + id + "/status", {
-      method: "PATCH",
-    });
-
-    const result = await response.json();
-
-    if (!response.ok || !result.success) {
-      alert(result.message || "Failed to change user status.");
-
-      return;
-    }
-
-    alert(result.message);
-
-    await loadUsers();
-
-    userSelect.value = id;
-
-    loadSelectedUser();
-  } catch (error) {
-    console.error("Toggle status error:", error);
-
-    alert("Unable to connect to the server.");
+  if (element) {
+    element.innerHTML = value;
   }
 }
 
-// =====================================================
-// DELETE USER
-// =====================================================
+// =============================================
+// Format Time
+// =============================================
 
-async function deleteUser() {
-  const userSelect = document.getElementById("userSelect");
-
-  const id = userSelect.value;
-
-  if (!id) {
-    alert("Please select a user first.");
-
-    return;
+function formatTime(time) {
+  if (!time) {
+    return "";
   }
 
-  const user = users.find(function (item) {
-    return String(item.id) === String(id);
-  });
+  const parts = String(time).split(":");
 
-  if (!user) return;
-
-  const confirmed = confirm("Delete user '" + user.username + "' permanently?");
-
-  if (!confirmed) return;
-
-  try {
-    const response = await fetch(API_URL + "/" + id, {
-      method: "DELETE",
-    });
-
-    const result = await response.json();
-
-    if (!response.ok || !result.success) {
-      alert(result.message || "Failed to delete user.");
-
-      return;
-    }
-
-    alert("User deleted successfully.");
-
-    await loadUsers();
-
-    clearUserFields();
-  } catch (error) {
-    console.error("Delete user error:", error);
-
-    alert("Unable to connect to the server.");
+  if (parts.length < 2) {
+    return time;
   }
+
+  let hour = parseInt(parts[0], 10);
+  const minute = parts[1];
+
+  const period = hour >= 12 ? "PM" : "AM";
+
+  hour = hour % 12;
+
+  if (hour === 0) {
+    hour = 12;
+  }
+
+  return `${hour}:${minute} ${period}`;
 }
 
-// =====================================================
-// BACKUP DATA
-// =====================================================
+// =============================================
+// HTML Escape
+// =============================================
 
-function backupData() {
-  const systemData = {
-    faculties: JSON.parse(localStorage.getItem("faculties")) || [],
+function escapeHTML(value) {
+  if (value === null || value === undefined) {
+    return "";
+  }
 
-    departments: JSON.parse(localStorage.getItem("departments")) || [],
-
-    courses: JSON.parse(localStorage.getItem("courses")) || [],
-
-    lecturers: JSON.parse(localStorage.getItem("lecturers")) || [],
-
-    students: JSON.parse(localStorage.getItem("students")) || [],
-
-    venues: JSON.parse(localStorage.getItem("venues")) || [],
-
-    timetable: JSON.parse(localStorage.getItem("generatedTimetable")) || [],
-
-    exams: JSON.parse(localStorage.getItem("examGeneratedTimetable")) || [],
-  };
-
-  const data = JSON.stringify(systemData, null, 4);
-
-  const file = new Blob([data], {
-    type: "application/json",
-  });
-
-  const link = document.createElement("a");
-
-  link.href = URL.createObjectURL(file);
-
-  link.download = "BUK_ITMS_Backup.json";
-
-  link.click();
-
-  URL.revokeObjectURL(link.href);
-
-  alert("Backup exported successfully.");
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
-// =====================================================
-// CLEAR LOCAL DATA
-// =====================================================
+// =============================================
+// Logout
+// =============================================
 
-function clearData() {
-  const confirmed = confirm(
-    "Warning! This will remove locally stored system data. Continue?",
-  );
-
-  if (!confirmed) return;
-
-  localStorage.removeItem("faculties");
-
-  localStorage.removeItem("departments");
-
-  localStorage.removeItem("courses");
-
-  localStorage.removeItem("lecturers");
-
-  localStorage.removeItem("students");
-
-  localStorage.removeItem("venues");
-
-  localStorage.removeItem("generatedTimetable");
-
-  localStorage.removeItem("examGeneratedTimetable");
-
-  alert("Local system data has been cleared.");
-}
-
-// =====================================================
-// LOGOUT
-// =====================================================
-
-function logout(event) {
-  event.preventDefault();
+function logout(e) {
+  e.preventDefault();
 
   localStorage.removeItem("loggedIn");
-
   localStorage.removeItem("username");
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
 
   window.location.href = "../index.html";
 }

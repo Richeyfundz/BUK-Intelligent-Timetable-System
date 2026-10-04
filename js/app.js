@@ -7,16 +7,19 @@ loginForm.addEventListener("submit", async function (e) {
   const password = document.getElementById("password").value.trim();
 
   try {
-    const response = await fetch("http://localhost:5000/api/auth/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const response = await fetch(
+      "https://buk-intelligent-timetable-system-production.up.railway.app/api/auth/login",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username,
+          password,
+        }),
       },
-      body: JSON.stringify({
-        username,
-        password,
-      }),
-    });
+    );
 
     const data = await response.json();
 

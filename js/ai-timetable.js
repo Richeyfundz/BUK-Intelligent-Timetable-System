@@ -3,7 +3,9 @@
 // COMPLETE 100-400 LEVEL GENERATOR
 // =====================================================
 
-const API_URL = "http://localhost:5000/api/ai-timetables";
+const API_BASE_URL =
+  "https://buk-intelligent-timetable-system-production.up.railway.app/api";
+const API_URL = `${API_BASE_URL}/ai-timetables`;
 
 let generatedTimetable = [];
 

@@ -1,11 +1,17 @@
+javascript;
 // =============================================
 // BUK Intelligent Timetable Management System
 // Departments Module
-// MySQL API Version
+// Railway MySQL API Version
 // =============================================
 
-const API_URL = "http://localhost:5000/api/departments";
-const FACULTY_API_URL = "http://localhost:5000/api/faculties";
+const API_BASE_URL =
+  "https://buk-intelligent-timetable-system-production.up.railway.app/api";
+
+const API_URL = `${API_BASE_URL}/departments`;
+const FACULTY_API_URL = `${API_BASE_URL}/faculties`;
+
+let editingDepartmentId = null;
 
 console.log("DEPARTMENTS.JS LOADED");
 
@@ -81,16 +87,17 @@ async function loadFacultyDropdown() {
 
     dropdown.innerHTML = '<option value="">-- Select Faculty --</option>';
 
-    if (
-      result.success &&
-      Array.isArray(result.data) &&
-      result.data.length > 0
-    ) {
-      result.data.forEach(function (faculty) {
+    const faculties = Array.isArray(result)
+      ? result
+      : Array.isArray(result.data)
+        ? result.data
+        : [];
+
+    if (faculties.length > 0) {
+      faculties.forEach(function (faculty) {
         const option = document.createElement("option");
 
         option.value = faculty.id;
-
         option.textContent = faculty.faculty_name;
 
         dropdown.appendChild(option);
@@ -112,17 +119,24 @@ async function loadFacultyDropdown() {
 }
 
 // =============================================
-// Save Department
+// Save / Update Department
 // =============================================
 
 async function saveDepartment(e) {
   e.preventDefault();
 
-  const facultyId = document.getElementById("faculty").value.trim();
+  const facultyElement = document.getElementById("faculty");
+  const codeElement = document.getElementById("deptCode");
+  const nameElement = document.getElementById("deptName");
 
-  const departmentCode = document.getElementById("deptCode").value.trim();
+  if (!facultyElement || !codeElement || !nameElement) {
+    alert("Department form fields were not found.");
+    return;
+  }
 
-  const departmentName = document.getElementById("deptName").value.trim();
+  const facultyId = facultyElement.value.trim();
+  const departmentCode = codeElement.value.trim();
+  const departmentName = nameElement.value.trim();
 
   // Validation
   if (!facultyId) {
@@ -140,42 +154,72 @@ async function saveDepartment(e) {
     return;
   }
 
+  const departmentData = {
+    faculty_id: Number(facultyId),
+    department_name: departmentName,
+    department_code: departmentCode,
+    hod: null,
+  };
+
   try {
-    const response = await fetch(API_URL, {
-      method: "POST",
+    let response;
 
-      headers: {
-        "Content-Type": "application/json",
-      },
+    // =============================================
+    // UPDATE
+    // =============================================
 
-      body: JSON.stringify({
-        faculty_id: Number(facultyId),
-        department_name: departmentName,
-        department_code: departmentCode,
-        hod: null,
-      }),
-    });
+    if (editingDepartmentId) {
+      response = await fetch(`${API_URL}/${editingDepartmentId}`, {
+        method: "PUT",
+
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify(departmentData),
+      });
+    }
+
+    // =============================================
+    // CREATE
+    // =============================================
+    else {
+      response = await fetch(API_URL, {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify(departmentData),
+      });
+    }
 
     const result = await response.json();
 
-    console.log("Save Department Response:", result);
+    console.log("Department Save Response:", result);
 
-    if (!response.ok || !result.success) {
+    if (!response.ok || result.success === false) {
       alert(result.message || "Failed to save department.");
-
       return;
     }
 
-    alert("Department added successfully.");
+    if (editingDepartmentId) {
+      alert("Department updated successfully.");
+    } else {
+      alert("Department added successfully.");
+    }
 
+    // Reset
     document.getElementById("departmentForm").reset();
 
-    // Reload department list
+    editingDepartmentId = null;
+
     await loadDepartments();
   } catch (error) {
     console.error("Save Department Error:", error);
 
-    alert("Unable to connect to the server. Make sure the backend is running.");
+    alert("Unable to connect to the server.");
   }
 }
 
@@ -188,7 +232,6 @@ async function loadDepartments() {
 
   if (!table) {
     console.error("Department table not found.");
-
     return;
   }
 
@@ -201,11 +244,13 @@ async function loadDepartments() {
 
     table.innerHTML = "";
 
-    if (
-      !result.success ||
-      !Array.isArray(result.data) ||
-      result.data.length === 0
-    ) {
+    const departments = Array.isArray(result)
+      ? result
+      : Array.isArray(result.data)
+        ? result.data
+        : [];
+
+    if (departments.length === 0) {
       table.innerHTML = `
         <tr>
           <td colspan="4" class="text-center text-muted py-4">
@@ -217,7 +262,7 @@ async function loadDepartments() {
       return;
     }
 
-    result.data.forEach(function (department) {
+    departments.forEach(function (department) {
       const row = document.createElement("tr");
 
       row.innerHTML = `
@@ -285,9 +330,8 @@ async function deleteDepartment(id) {
 
     console.log("Delete Department Response:", result);
 
-    if (!response.ok || !result.success) {
+    if (!response.ok || result.success === false) {
       alert(result.message || "Failed to delete department.");
-
       return;
     }
 
@@ -313,31 +357,45 @@ async function editDepartment(id) {
 
     console.log("Edit Department Response:", result);
 
-    if (!response.ok || !result.success) {
+    if (!response.ok || result.success === false) {
       alert(result.message || "Department not found.");
-
       return;
     }
 
     const department = result.data;
 
-    // Make sure faculties are loaded first
+    // Load faculties first
     await loadFacultyDropdown();
 
-    document.getElementById("faculty").value = department.faculty_id;
+    const faculty = document.getElementById("faculty");
+    const code = document.getElementById("deptCode");
+    const name = document.getElementById("deptName");
 
-    document.getElementById("deptCode").value = department.department_code;
+    if (faculty) {
+      faculty.value = department.faculty_id;
+    }
 
-    document.getElementById("deptName").value = department.department_name;
+    if (code) {
+      code.value = department.department_code;
+    }
 
-    /*
-      We temporarily delete the old record.
-      When the user clicks Save, the updated
-      department will be created.
-    */
+    if (name) {
+      name.value = department.department_name;
+    }
 
-    await deleteDepartmentWithoutConfirmation(id);
+    // Store ID for PUT update
+    editingDepartmentId = id;
 
+    // Change submit button text if available
+    const submitButton = document.querySelector(
+      '#departmentForm button[type="submit"]',
+    );
+
+    if (submitButton) {
+      submitButton.innerHTML = '<i class="bi bi-save"></i> Update Department';
+    }
+
+    // Scroll to form
     window.scrollTo({
       top: 0,
       behavior: "smooth",
@@ -350,31 +408,15 @@ async function editDepartment(id) {
 }
 
 // =============================================
-// Delete Without Confirmation
-// =============================================
-
-async function deleteDepartmentWithoutConfirmation(id) {
-  try {
-    const response = await fetch(`${API_URL}/${id}`, {
-      method: "DELETE",
-    });
-
-    const result = await response.json();
-
-    console.log("Delete For Edit Response:", result);
-
-    await loadDepartments();
-  } catch (error) {
-    console.error("Edit preparation error:", error);
-  }
-}
-
-// =============================================
 // Search Department
 // =============================================
 
 function searchDepartment() {
   const searchInput = document.getElementById("searchDepartment");
+
+  if (!searchInput) {
+    return;
+  }
 
   const keyword = searchInput.value.toLowerCase().trim();
 

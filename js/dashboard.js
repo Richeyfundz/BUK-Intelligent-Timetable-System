@@ -1,7 +1,10 @@
 // ======================================
 // BUK Intelligent Timetable Management System
-// Dashboard
+// Dashboard - Railway API Version
 // ======================================
+
+const API_BASE_URL =
+  "https://buk-intelligent-timetable-system-production.up.railway.app/api";
 
 document.addEventListener("DOMContentLoaded", function () {
   // ===============================
@@ -10,7 +13,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
   if (localStorage.getItem("loggedIn") !== "true") {
     window.location.href = "../index.html";
-
     return;
   }
 
@@ -22,23 +24,24 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const options = {
     weekday: "long",
-
     year: "numeric",
-
     month: "long",
-
     day: "numeric",
   };
 
-  document.getElementById("currentDate").innerHTML = today.toLocaleDateString(
-    "en-GB",
-    options,
-  );
+  const currentDate = document.getElementById("currentDate");
+  const todayDate = document.getElementById("todayDate");
 
-  document.getElementById("todayDate").innerHTML = today.toLocaleDateString();
+  if (currentDate) {
+    currentDate.innerHTML = today.toLocaleDateString("en-GB", options);
+  }
+
+  if (todayDate) {
+    todayDate.innerHTML = today.toLocaleDateString();
+  }
 
   // ===============================
-  // Dashboard Statistics
+  // Load Dashboard Statistics
   // ===============================
 
   loadStatistics();
@@ -47,37 +50,136 @@ document.addEventListener("DOMContentLoaded", function () {
   // Logout
   // ===============================
 
-  document.getElementById("logoutBtn").addEventListener("click", logout);
+  const logoutBtn = document.getElementById("logoutBtn");
+
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", logout);
+  }
 });
 
 // ======================================
-// Load Statistics
+// Load Statistics From Railway API
 // ======================================
 
-function loadStatistics() {
-  const faculties = JSON.parse(localStorage.getItem("faculties")) || [];
+async function loadStatistics() {
+  try {
+    const [
+      facultiesResponse,
+      departmentsResponse,
+      coursesResponse,
+      lecturersResponse,
+      studentsResponse,
+      venuesResponse,
+    ] = await Promise.all([
+      fetch(`${API_BASE_URL}/faculties`),
+      fetch(`${API_BASE_URL}/departments`),
+      fetch(`${API_BASE_URL}/courses`),
+      fetch(`${API_BASE_URL}/lecturers`),
+      fetch(`${API_BASE_URL}/students`),
+      fetch(`${API_BASE_URL}/venues`),
+    ]);
 
-  const departments = JSON.parse(localStorage.getItem("departments")) || [];
+    // Check for API errors
+    if (
+      !facultiesResponse.ok ||
+      !departmentsResponse.ok ||
+      !coursesResponse.ok ||
+      !lecturersResponse.ok ||
+      !studentsResponse.ok ||
+      !venuesResponse.ok
+    ) {
+      throw new Error("Failed to load dashboard data.");
+    }
 
-  const courses = JSON.parse(localStorage.getItem("courses")) || [];
+    const facultiesData = await facultiesResponse.json();
+    const departmentsData = await departmentsResponse.json();
+    const coursesData = await coursesResponse.json();
+    const lecturersData = await lecturersResponse.json();
+    const studentsData = await studentsResponse.json();
+    const venuesData = await venuesResponse.json();
 
-  const lecturers = JSON.parse(localStorage.getItem("lecturers")) || [];
+    // ===============================
+    // Get Data Arrays
+    // ===============================
 
-  const students = JSON.parse(localStorage.getItem("students")) || [];
+    const faculties = getDataArray(facultiesData);
+    const departments = getDataArray(departmentsData);
+    const courses = getDataArray(coursesData);
+    const lecturers = getDataArray(lecturersData);
+    const students = getDataArray(studentsData);
+    const venues = getDataArray(venuesData);
 
-  const venues = JSON.parse(localStorage.getItem("venues")) || [];
+    // ===============================
+    // Update Dashboard
+    // ===============================
 
-  document.getElementById("facultyCount").innerHTML = faculties.length;
+    const facultyCount = document.getElementById("facultyCount");
+    const departmentCount = document.getElementById("departmentCount");
+    const courseCount = document.getElementById("courseCount");
+    const lecturerCount = document.getElementById("lecturerCount");
+    const studentCount = document.getElementById("studentCount");
+    const venueCount = document.getElementById("venueCount");
 
-  document.getElementById("departmentCount").innerHTML = departments.length;
+    if (facultyCount) {
+      facultyCount.innerHTML = faculties.length;
+    }
 
-  document.getElementById("courseCount").innerHTML = courses.length;
+    if (departmentCount) {
+      departmentCount.innerHTML = departments.length;
+    }
 
-  document.getElementById("lecturerCount").innerHTML = lecturers.length;
+    if (courseCount) {
+      courseCount.innerHTML = courses.length;
+    }
 
-  document.getElementById("studentCount").innerHTML = students.length;
+    if (lecturerCount) {
+      lecturerCount.innerHTML = lecturers.length;
+    }
 
-  document.getElementById("venueCount").innerHTML = venues.length;
+    if (studentCount) {
+      studentCount.innerHTML = students.length;
+    }
+
+    if (venueCount) {
+      venueCount.innerHTML = venues.length;
+    }
+  } catch (error) {
+    console.error("Dashboard loading error:", error);
+
+    // Show zero instead of breaking the dashboard
+    const counters = [
+      "facultyCount",
+      "departmentCount",
+      "courseCount",
+      "lecturerCount",
+      "studentCount",
+      "venueCount",
+    ];
+
+    counters.forEach((id) => {
+      const element = document.getElementById(id);
+
+      if (element) {
+        element.innerHTML = "0";
+      }
+    });
+  }
+}
+
+// ======================================
+// Handle Different API Response Formats
+// ======================================
+
+function getDataArray(response) {
+  if (Array.isArray(response)) {
+    return response;
+  }
+
+  if (response && Array.isArray(response.data)) {
+    return response.data;
+  }
+
+  return [];
 }
 
 // ======================================
@@ -89,8 +191,9 @@ function logout(e) {
 
   if (confirm("Are you sure you want to logout?")) {
     localStorage.removeItem("loggedIn");
-
     localStorage.removeItem("username");
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
 
     window.location.href = "../index.html";
   }

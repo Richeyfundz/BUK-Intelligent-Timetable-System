@@ -1,207 +1,398 @@
+javascript;
 // =============================================
 // BUK Intelligent Timetable Management System
-// Lecturers Module
+// Lecturers Module - Railway MySQL API Version
+// =============================================
+
+const API_BASE_URL =
+  "https://buk-intelligent-timetable-system-production.up.railway.app/api";
+
+const LECTURER_API_URL = `${API_BASE_URL}/lecturers`;
+const DEPARTMENT_API_URL = `${API_BASE_URL}/departments`;
+
+let editingLecturerId = null;
+
+// =============================================
+// Page Initialization
 // =============================================
 
 document.addEventListener("DOMContentLoaded", function () {
   // Login Check
-
   if (localStorage.getItem("loggedIn") !== "true") {
     window.location.href = "../index.html";
-
     return;
   }
 
   // Current Date
-
   const currentDate = document.getElementById("currentDate");
 
   if (currentDate) {
     currentDate.textContent = new Date().toLocaleDateString("en-GB", {
       weekday: "long",
-
       day: "numeric",
-
       month: "long",
-
       year: "numeric",
     });
   }
 
+  // Load Departments
   loadDepartmentDropdown();
 
+  // Load Lecturers
   loadLecturers();
 
-  document
-    .getElementById("lecturerForm")
-    .addEventListener("submit", saveLecturer);
+  // Lecturer Form
+  const lecturerForm = document.getElementById("lecturerForm");
 
-  document
-    .getElementById("searchLecturer")
-    .addEventListener("keyup", searchLecturer);
+  if (lecturerForm) {
+    lecturerForm.addEventListener("submit", saveLecturer);
+  }
 
-  document.getElementById("logoutBtn").addEventListener("click", logout);
+  // Search
+  const searchInput = document.getElementById("searchLecturer");
+
+  if (searchInput) {
+    searchInput.addEventListener("keyup", searchLecturer);
+  }
+
+  // Logout
+  const logoutBtn = document.getElementById("logoutBtn");
+
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", logout);
+  }
 });
 
 // =============================================
 // Load Departments
 // =============================================
 
-function loadDepartmentDropdown() {
-  let departments = JSON.parse(localStorage.getItem("departments")) || [];
-
+async function loadDepartmentDropdown() {
   const dropdown = document.getElementById("department");
 
-  dropdown.innerHTML = `
+  if (!dropdown) {
+    console.error("Department dropdown not found.");
+    return;
+  }
 
-    <option value="">
-    -- Select Department --
-    </option>
+  try {
+    const response = await fetch(DEPARTMENT_API_URL);
 
-    `;
+    const result = await response.json();
 
-  departments.forEach(function (department) {
-    dropdown.innerHTML += `
+    console.log("Department API Response:", result);
 
-        <option value="${department.name}">
+    const departments = Array.isArray(result)
+      ? result
+      : Array.isArray(result.data)
+        ? result.data
+        : [];
 
-        ${department.name}
+    dropdown.innerHTML = '<option value="">-- Select Department --</option>';
 
-        </option>
+    if (departments.length === 0) {
+      dropdown.innerHTML = '<option value="">No departments available</option>';
+      return;
+    }
 
-        `;
-  });
+    departments.forEach(function (department) {
+      const option = document.createElement("option");
+
+      option.value = department.id;
+      option.textContent = department.department_name;
+
+      dropdown.appendChild(option);
+    });
+  } catch (error) {
+    console.error("Department Loading Error:", error);
+
+    dropdown.innerHTML = '<option value="">Unable to load departments</option>';
+
+    alert("Unable to load departments from the server.");
+  }
 }
 
 // =============================================
-// Save Lecturer
+// Save / Update Lecturer
 // =============================================
 
-function saveLecturer(e) {
+async function saveLecturer(e) {
   e.preventDefault();
 
-  let lecturers = JSON.parse(localStorage.getItem("lecturers")) || [];
+  const staffId = document.getElementById("staffId").value.trim();
+  const lecturerName = document.getElementById("lecturerName").value.trim();
+  const departmentId = document.getElementById("department").value;
 
-  const lecturer = {
-    id: Date.now(),
+  // Validation
+  if (!staffId) {
+    alert("Please enter the Staff ID.");
+    return;
+  }
 
-    staffId: document.getElementById("staffId").value,
+  if (!lecturerName) {
+    alert("Please enter the Lecturer Name.");
+    return;
+  }
 
-    name: document.getElementById("lecturerName").value,
+  if (!departmentId) {
+    alert("Please select a Department.");
+    return;
+  }
 
-    department: document.getElementById("department").value,
+  // Split lecturer name into first and last name
+  const nameParts = lecturerName.split(/\s+/);
+
+  const firstName = nameParts.shift();
+  const lastName = nameParts.join(" ") || "";
+
+  const lecturerData = {
+    department_id: Number(departmentId),
+    staff_id: staffId,
+    first_name: firstName,
+    last_name: lastName,
+    email: "",
+    phone: "",
+    academic_rank: "",
+    specialization: "",
   };
 
-  lecturers.push(lecturer);
+  try {
+    let response;
 
-  localStorage.setItem("lecturers", JSON.stringify(lecturers));
+    // =============================================
+    // UPDATE
+    // =============================================
 
-  document.getElementById("lecturerForm").reset();
+    if (editingLecturerId) {
+      response = await fetch(`${LECTURER_API_URL}/${editingLecturerId}`, {
+        method: "PUT",
 
-  loadLecturers();
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify(lecturerData),
+      });
+    }
+
+    // =============================================
+    // CREATE
+    // =============================================
+    else {
+      response = await fetch(LECTURER_API_URL, {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify(lecturerData),
+      });
+    }
+
+    const result = await response.json();
+
+    console.log("Lecturer Save Response:", result);
+
+    if (!response.ok || result.success === false) {
+      alert(result.message || "Failed to save lecturer.");
+      return;
+    }
+
+    if (editingLecturerId) {
+      alert("Lecturer updated successfully.");
+    } else {
+      alert("Lecturer added successfully.");
+    }
+
+    editingLecturerId = null;
+
+    document.getElementById("lecturerForm").reset();
+
+    await loadLecturers();
+  } catch (error) {
+    console.error("Save Lecturer Error:", error);
+
+    alert("Unable to connect to the server.");
+  }
 }
 
 // =============================================
 // Load Lecturers
 // =============================================
 
-function loadLecturers() {
-  let lecturers = JSON.parse(localStorage.getItem("lecturers")) || [];
-
+async function loadLecturers() {
   const table = document.getElementById("lecturerTable");
 
-  table.innerHTML = "";
+  if (!table) {
+    console.error("Lecturer table not found.");
+    return;
+  }
 
-  lecturers.forEach(function (lecturer) {
-    table.innerHTML += `
+  try {
+    const response = await fetch(LECTURER_API_URL);
 
+    const result = await response.json();
 
+    console.log("Lecturer API Response:", result);
+
+    const lecturers = Array.isArray(result)
+      ? result
+      : Array.isArray(result.data)
+        ? result.data
+        : [];
+
+    table.innerHTML = "";
+
+    if (lecturers.length === 0) {
+      table.innerHTML = `
         <tr>
+          <td colspan="4" class="text-center text-muted py-4">
+            No lecturers found.
+          </td>
+        </tr>
+      `;
 
+      return;
+    }
 
-        <td>${lecturer.staffId}</td>
+    lecturers.forEach(function (lecturer) {
+      const row = document.createElement("tr");
 
+      const fullName =
+        `${lecturer.first_name || ""} ${lecturer.last_name || ""}`.trim();
 
-        <td>${lecturer.name}</td>
-
-
-        <td>${lecturer.department}</td>
-
-
-
+      row.innerHTML = `
         <td>
-
-
-        <button
-        class="btn btn-warning btn-sm"
-        onclick="editLecturer(${lecturer.id})">
-
-
-        <i class="bi bi-pencil-square"></i>
-
-
-        </button>
-
-
-
-        <button
-        class="btn btn-danger btn-sm"
-        onclick="deleteLecturer(${lecturer.id})">
-
-
-        <i class="bi bi-trash"></i>
-
-
-        </button>
-
-
-
+          ${escapeHTML(lecturer.staff_id)}
         </td>
 
+        <td>
+          ${escapeHTML(fullName)}
+        </td>
 
-        </tr>
+        <td>
+          ${escapeHTML(lecturer.department_name || "N/A")}
+        </td>
 
+        <td>
+          <button
+            type="button"
+            class="btn btn-warning btn-sm me-1"
+            onclick="editLecturer(${lecturer.id})"
+          >
+            <i class="bi bi-pencil-square"></i>
+          </button>
 
-        `;
-  });
+          <button
+            type="button"
+            class="btn btn-danger btn-sm"
+            onclick="deleteLecturer(${lecturer.id})"
+          >
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>
+      `;
+
+      table.appendChild(row);
+    });
+  } catch (error) {
+    console.error("Load Lecturers Error:", error);
+
+    table.innerHTML = `
+      <tr>
+        <td colspan="4" class="text-center text-danger py-4">
+          Unable to load lecturers.
+        </td>
+      </tr>
+    `;
+  }
 }
 
 // =============================================
 // Delete Lecturer
 // =============================================
 
-function deleteLecturer(id) {
-  if (!confirm("Delete this Lecturer?")) return;
+async function deleteLecturer(id) {
+  if (!confirm("Delete this Lecturer?")) {
+    return;
+  }
 
-  let lecturers = JSON.parse(localStorage.getItem("lecturers")) || [];
+  try {
+    const response = await fetch(`${LECTURER_API_URL}/${id}`, {
+      method: "DELETE",
+    });
 
-  lecturers = lecturers.filter(function (lecturer) {
-    return lecturer.id !== id;
-  });
+    const result = await response.json();
 
-  localStorage.setItem("lecturers", JSON.stringify(lecturers));
+    console.log("Delete Lecturer Response:", result);
 
-  loadLecturers();
+    if (!response.ok || result.success === false) {
+      alert(result.message || "Failed to delete lecturer.");
+      return;
+    }
+
+    alert("Lecturer deleted successfully.");
+
+    await loadLecturers();
+  } catch (error) {
+    console.error("Delete Lecturer Error:", error);
+
+    alert("Unable to connect to the server.");
+  }
 }
 
 // =============================================
 // Edit Lecturer
 // =============================================
 
-function editLecturer(id) {
-  let lecturers = JSON.parse(localStorage.getItem("lecturers")) || [];
+async function editLecturer(id) {
+  try {
+    const response = await fetch(`${LECTURER_API_URL}/${id}`);
 
-  const lecturer = lecturers.find(function (item) {
-    return item.id === id;
-  });
+    const result = await response.json();
 
-  document.getElementById("staffId").value = lecturer.staffId;
+    console.log("Edit Lecturer Response:", result);
 
-  document.getElementById("lecturerName").value = lecturer.name;
+    if (!response.ok || result.success === false) {
+      alert(result.message || "Lecturer not found.");
+      return;
+    }
 
-  document.getElementById("department").value = lecturer.department;
+    const lecturer = result.data;
 
-  deleteLecturer(id);
+    // Make sure departments are loaded
+    await loadDepartmentDropdown();
+
+    const fullName =
+      `${lecturer.first_name || ""} ${lecturer.last_name || ""}`.trim();
+
+    document.getElementById("staffId").value = lecturer.staff_id || "";
+
+    document.getElementById("lecturerName").value = fullName;
+
+    document.getElementById("department").value = lecturer.department_id || "";
+
+    editingLecturerId = id;
+
+    // Change button text
+    const submitButton = document.querySelector(
+      '#lecturerForm button[type="submit"]',
+    );
+
+    if (submitButton) {
+      submitButton.innerHTML = '<i class="bi bi-save"></i> Update Lecturer';
+    }
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  } catch (error) {
+    console.error("Edit Lecturer Error:", error);
+
+    alert("Unable to load lecturer.");
+  }
 }
 
 // =============================================
@@ -209,14 +400,20 @@ function editLecturer(id) {
 // =============================================
 
 function searchLecturer() {
-  const keyword = document.getElementById("searchLecturer").value.toLowerCase();
+  const searchInput = document.getElementById("searchLecturer");
+
+  if (!searchInput) {
+    return;
+  }
+
+  const keyword = searchInput.value.toLowerCase().trim();
 
   const rows = document.querySelectorAll("#lecturerTable tr");
 
   rows.forEach(function (row) {
-    row.style.display = row.innerText.toLowerCase().includes(keyword)
-      ? ""
-      : "none";
+    const text = row.innerText.toLowerCase();
+
+    row.style.display = text.includes(keyword) ? "" : "none";
   });
 }
 
@@ -228,8 +425,26 @@ function logout(e) {
   e.preventDefault();
 
   localStorage.removeItem("loggedIn");
-
   localStorage.removeItem("username");
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
 
   window.location.href = "../index.html";
+}
+
+// =============================================
+// HTML Escape
+// =============================================
+
+function escapeHTML(value) {
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
