@@ -61,6 +61,7 @@ exports.createCourse = (req, res) => {
     level,
     semester,
   } = req.body;
+    console.log("COURSE DATA RECEIVED:", req.body);
 
   if (
     !department_id ||
