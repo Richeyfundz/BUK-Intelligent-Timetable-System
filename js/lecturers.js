@@ -1,216 +1,148 @@
 
-// =============================================
-// BUK Intelligent Timetable Management System
-// Lecturers Module - Railway MySQL API
-// =============================================
-
-const API_BASE_URL =
+const API_BASE =
   "https://buk-intelligent-timetable-system-production.up.railway.app/api";
 
-const LECTURER_API_URL = `${API_BASE_URL}/lecturers`;
-const DEPARTMENT_API_URL = `${API_BASE_URL}/departments`;
+const LECTURER_API = `${API_BASE}/lecturers`;
+const DEPARTMENT_API = `${API_BASE}/departments`;
+const COURSE_API = `${LECTURER_API}/courses`;
 
-let editingLecturerId = null;
+let lecturers = [];
+let courses = [];
 
-document.addEventListener("DOMContentLoaded", async function () {
-  if (localStorage.getItem("loggedIn") !== "true") {
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.getElementById("lecturerForm");
+
+  if (
+    localStorage.getItem("loggedIn") !== "true"
+  ) {
     window.location.href = "../index.html";
     return;
   }
 
-  const dateElement = document.getElementById("currentDate");
+  form.addEventListener("submit", saveLecturer);
 
-  if (dateElement) {
-    dateElement.textContent = new Date().toLocaleDateString("en-GB", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-  }
+  document.getElementById("resetBtn")
+    .addEventListener("click", resetForm);
 
-  const form = document.getElementById("lecturerForm");
+  document.getElementById("searchInput")
+    .addEventListener("input", searchLecturers);
 
-  if (form) {
-    form.addEventListener("submit", saveLecturer);
-    form.addEventListener("reset", function () {
-      editingLecturerId = null;
+  document.getElementById("logoutBtn")
+    .addEventListener("click", logout);
 
-      const button = form.querySelector('button[type="submit"]');
-
-      if (button) {
-        button.innerHTML = '<i class="bi bi-save"></i> Save Lecturer';
-      }
-    });
-  }
-
-  const searchInput = document.getElementById("searchLecturer");
-
-  if (searchInput) {
-    searchInput.addEventListener("input", searchLecturer);
-  }
-
-  const logoutButton = document.getElementById("logoutBtn");
-
-  if (logoutButton) {
-    logoutButton.addEventListener("click", logout);
-  }
-
-  await loadDepartmentDropdown();
-  await loadLecturers();
+  loadDepartments();
+  loadCourses();
+  loadLecturers();
 });
 
-// =============================================
-// LOAD DEPARTMENTS
-// =============================================
+// COMMON API REQUEST
+async function apiRequest(url, options = {}) {
+  const token = localStorage.getItem("token");
 
-async function loadDepartmentDropdown() {
-  const dropdown = document.getElementById("department");
-
-  if (!dropdown) return;
-
-  dropdown.innerHTML = '<option value="">Loading departments...</option>';
-
-  try {
-    const response = await fetch(DEPARTMENT_API_URL);
-    const result = await response.json();
-
-    if (!response.ok || result.success === false) {
-      throw new Error(result.message || "Failed to load departments.");
-    }
-
-    const departments = Array.isArray(result)
-      ? result
-      : Array.isArray(result.data)
-        ? result.data
-        : [];
-
-    dropdown.innerHTML = '<option value="">-- Select Department --</option>';
-
-    departments.forEach(function (department) {
-      if (department.id == null || !department.department_name) return;
-
-      const option = document.createElement("option");
-      option.value = String(department.id);
-      option.textContent = department.department_name;
-
-      dropdown.appendChild(option);
-    });
-
-    if (dropdown.options.length === 1) {
-      dropdown.innerHTML =
-        '<option value="">No departments available</option>';
-    }
-  } catch (error) {
-    console.error("Department Loading Error:", error);
-
-    dropdown.innerHTML =
-      '<option value="">Unable to load departments</option>';
-  }
-}
-
-// =============================================
-// SAVE OR UPDATE LECTURER
-// =============================================
-
-async function saveLecturer(event) {
-  event.preventDefault();
-
-  const staffId = document.getElementById("staffId").value.trim();
-  const firstName = document.getElementById("firstName").value.trim();
-  const lastName = document.getElementById("lastName").value.trim();
-  const email = document.getElementById("lecturerEmail").value.trim();
-  const departmentId = document.getElementById("department").value;
-
-  if (!staffId || !firstName || !lastName || !email || !departmentId) {
-    alert("Please complete all required fields.");
-    return;
-  }
-
-  const lecturerData = {
-    department_id: Number(departmentId),
-    staff_id: staffId,
-    first_name: firstName,
-    last_name: lastName,
-    email: email,
-    phone: "",
-    academic_rank: "",
-    specialization: "",
+  const headers = {
+    "Content-Type": "application/json",
+    ...(options.headers || {}),
   };
 
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(url, {
+    ...options,
+    headers,
+  });
+
+  const result = await response.json();
+
+  if (!response.ok || result.success === false) {
+    throw new Error(
+      result.message || "Request failed"
+    );
+  }
+
+  return result;
+}
+
+// SHOW MESSAGE
+function showMessage(message, type = "success") {
+  const box = document.getElementById("messageBox");
+
+  box.innerHTML = "";
+
+  const alert = document.createElement("div");
+  alert.className = `alert alert-${type}`;
+  alert.textContent = message;
+
+  box.appendChild(alert);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+// LOAD DEPARTMENTS
+async function loadDepartments() {
   try {
-    const url = editingLecturerId
-      ? `${LECTURER_API_URL}/${editingLecturerId}`
-      : LECTURER_API_URL;
+    const result = await apiRequest(DEPARTMENT_API);
+    const select = document.getElementById("department_id");
 
-    const response = await fetch(url, {
-      method: editingLecturerId ? "PUT" : "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(lecturerData),
+    select.innerHTML =
+      '<option value="">Select department</option>';
+
+    const rows = result.data || [];
+
+    rows.forEach((department) => {
+      const option = document.createElement("option");
+
+      option.value = department.id;
+      option.textContent = department.department_name;
+
+      select.appendChild(option);
     });
-
-    const result = await response.json();
-
-    if (!response.ok || result.success === false) {
-      alert(result.message || "Failed to save lecturer.");
-      return;
-    }
-
-    alert(
-      editingLecturerId
-        ? "Lecturer updated successfully."
-        : "Lecturer added successfully.",
-    );
-
-    editingLecturerId = null;
-    document.getElementById("lecturerForm").reset();
-
-    const button = document.querySelector(
-      '#lecturerForm button[type="submit"]',
-    );
-
-    if (button) {
-      button.innerHTML = '<i class="bi bi-save"></i> Save Lecturer';
-    }
-
-    await loadLecturers();
   } catch (error) {
-    console.error("Save Lecturer Error:", error);
-    alert("Unable to connect to the server. Please try again.");
+    showMessage(error.message, "danger");
   }
 }
 
-// =============================================
-// LOAD LECTURERS
-// =============================================
-
-async function loadLecturers() {
-  const table = document.getElementById("lecturerTable");
-
-  if (!table) return;
+// LOAD COURSES
+async function loadCourses() {
+  const select = document.getElementById("course_ids");
 
   try {
-    const response = await fetch(LECTURER_API_URL);
-    const result = await response.json();
+    const result = await apiRequest(COURSE_API);
+    courses = result.data || [];
 
-    if (!response.ok || result.success === false) {
-      throw new Error(result.message || "Failed to load lecturers.");
-    }
+    select.innerHTML = "";
 
-    const lecturers = Array.isArray(result)
-      ? result
-      : Array.isArray(result.data)
-        ? result.data
-        : [];
+    courses.forEach((course) => {
+      const option = document.createElement("option");
 
-    table.innerHTML = "";
+      option.value = course.id;
+      option.textContent =
+        `${course.course_code} - ${course.course_title}` +
+        ` (${course.level}, ${course.semester})`;
 
-    if (lecturers.length === 0) {
-      table.innerHTML = `
+      select.appendChild(option);
+    });
+  } catch (error) {
+    showMessage(error.message, "danger");
+  }
+}
+
+// LOAD LECTURERS
+async function loadLecturers() {
+  const body = document.getElementById(
+    "lecturerTableBody"
+  );
+
+  try {
+    const result = await apiRequest(LECTURER_API);
+    lecturers = result.data || [];
+
+    body.innerHTML = "";
+
+    if (!lecturers.length) {
+      body.innerHTML = `
         <tr>
-          <td colspan="4" class="text-center text-muted py-4">
+          <td colspan="5" class="text-center">
             No lecturers found.
           </td>
         </tr>
@@ -218,165 +150,295 @@ async function loadLecturers() {
       return;
     }
 
-    lecturers.forEach(function (lecturer) {
+    for (const lecturer of lecturers) {
       const row = document.createElement("tr");
-
-      const name =
-        `${lecturer.first_name || ""} ${lecturer.last_name || ""}`.trim();
 
       row.innerHTML = `
         <td>${escapeHTML(lecturer.staff_id)}</td>
-        <td>${escapeHTML(name)}</td>
-        <td>${escapeHTML(lecturer.department_name || "N/A")}</td>
+        <td>
+          ${escapeHTML(lecturer.first_name)}
+          ${escapeHTML(lecturer.last_name)}
+        </td>
+        <td>
+          ${escapeHTML(lecturer.department_name || "")}
+        </td>
+        <td id="courses-${Number(lecturer.id)}">
+          Loading...
+        </td>
         <td>
           <button
-            type="button"
-            class="btn btn-warning btn-sm me-1"
-            onclick="editLecturer(${Number(lecturer.id)})"
-            aria-label="Edit lecturer"
-          >
-            <i class="bi bi-pencil-square"></i>
+            class="btn btn-sm btn-primary me-1"
+            data-action="edit"
+            data-id="${Number(lecturer.id)}">
+            Edit
           </button>
-
           <button
-            type="button"
-            class="btn btn-danger btn-sm"
-            onclick="deleteLecturer(${Number(lecturer.id)})"
-            aria-label="Delete lecturer"
-          >
-            <i class="bi bi-trash"></i>
+            class="btn btn-sm btn-danger"
+            data-action="delete"
+            data-id="${Number(lecturer.id)}">
+            Delete
           </button>
         </td>
       `;
 
-      table.appendChild(row);
-    });
-  } catch (error) {
-    console.error("Load Lecturers Error:", error);
+      body.appendChild(row);
 
-    table.innerHTML = `
+      loadLecturerCourseNames(lecturer.id);
+    }
+  } catch (error) {
+    body.innerHTML = `
       <tr>
-        <td colspan="4" class="text-center text-danger py-4">
-          Unable to load lecturers.
+        <td colspan="5" class="text-danger">
+          ${escapeHTML(error.message)}
         </td>
       </tr>
     `;
   }
 }
 
-// =============================================
-// EDIT LECTURER
-// =============================================
+// SHOW ASSIGNED COURSE NAMES
+async function loadLecturerCourseNames(lecturerId) {
+  const cell = document.getElementById(
+    `courses-${Number(lecturerId)}`
+  );
 
+  if (!cell) return;
+
+  try {
+    const result = await apiRequest(
+      `${LECTURER_API}/${lecturerId}/courses`
+    );
+
+    const ids = result.data || [];
+
+    const names = courses
+      .filter((course) => ids.includes(Number(course.id)))
+      .map((course) => course.course_code);
+
+    cell.textContent = names.length
+      ? names.join(", ")
+      : "No courses assigned";
+  } catch {
+    cell.textContent = "Could not load";
+  }
+}
+
+// SAVE OR UPDATE LECTURER
+async function saveLecturer(event) {
+  event.preventDefault();
+
+  const id = document.getElementById("lecturerId").value;
+
+  const lecturer = {
+    staff_id: document.getElementById("staff_id").value.trim(),
+    department_id: document.getElementById("department_id").value,
+    first_name: document.getElementById("first_name").value.trim(),
+    last_name: document.getElementById("last_name").value.trim(),
+    email: document.getElementById("email").value.trim(),
+    phone: document.getElementById("phone").value.trim(),
+    academic_rank:
+      document.getElementById("academic_rank").value.trim(),
+    specialization:
+      document.getElementById("specialization").value.trim(),
+  };
+
+  const courseIds = Array.from(
+    document.getElementById("course_ids").selectedOptions
+  ).map((option) => Number(option.value));
+
+  const button = document.getElementById("saveBtn");
+  button.disabled = true;
+
+  try {
+    let lecturerId = id;
+
+    if (id) {
+      await apiRequest(`${LECTURER_API}/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(lecturer),
+      });
+    } else {
+      const result = await apiRequest(LECTURER_API, {
+        method: "POST",
+        body: JSON.stringify(lecturer),
+      });
+
+      lecturerId = result.lecturerId;
+    }
+
+    await apiRequest(
+      `${LECTURER_API}/${lecturerId}/courses`,
+      {
+        method: "PUT",
+        body: JSON.stringify({
+          course_ids: courseIds,
+        }),
+      }
+    );
+
+    showMessage(
+      "Lecturer and course assignments saved successfully."
+    );
+
+    resetForm();
+    await loadLecturers();
+  } catch (error) {
+    showMessage(error.message, "danger");
+  } finally {
+    button.disabled = false;
+  }
+}
+
+// EDIT LECTURER
 async function editLecturer(id) {
   try {
-    const response = await fetch(`${LECTURER_API_URL}/${id}`);
-    const result = await response.json();
-
-    if (!response.ok || result.success === false) {
-      alert(result.message || "Lecturer not found.");
-      return;
-    }
+    const result = await apiRequest(
+      `${LECTURER_API}/${id}`
+    );
 
     const lecturer = result.data;
 
-    await loadDepartmentDropdown();
+    document.getElementById("lecturerId").value =
+      lecturer.id;
 
-    document.getElementById("staffId").value = lecturer.staff_id || "";
-    document.getElementById("firstName").value = lecturer.first_name || "";
-    document.getElementById("lastName").value = lecturer.last_name || "";
-    document.getElementById("lecturerEmail").value = lecturer.email || "";
-    document.getElementById("department").value =
-      String(lecturer.department_id || "");
+    document.getElementById("staff_id").value =
+      lecturer.staff_id || "";
 
-    editingLecturerId = id;
+    document.getElementById("department_id").value =
+      lecturer.department_id || "";
 
-    const button = document.querySelector(
-      '#lecturerForm button[type="submit"]',
+    document.getElementById("first_name").value =
+      lecturer.first_name || "";
+
+    document.getElementById("last_name").value =
+      lecturer.last_name || "";
+
+    document.getElementById("email").value =
+      lecturer.email || "";
+
+    document.getElementById("phone").value =
+      lecturer.phone || "";
+
+    document.getElementById("academic_rank").value =
+      lecturer.academic_rank || "";
+
+    document.getElementById("specialization").value =
+      lecturer.specialization || "";
+
+    const assignment = await apiRequest(
+      `${LECTURER_API}/${id}/courses`
     );
 
-    if (button) {
-      button.innerHTML = '<i class="bi bi-save"></i> Update Lecturer';
-    }
+    const assignedIds = (assignment.data || [])
+      .map(Number);
+
+    const select = document.getElementById("course_ids");
+
+    Array.from(select.options).forEach((option) => {
+      option.selected = assignedIds.includes(
+        Number(option.value)
+      );
+    });
+
+    document.getElementById("formTitle").textContent =
+      "Edit Lecturer";
+
+    document.getElementById("saveBtn").textContent =
+      "Update Lecturer";
 
     window.scrollTo({ top: 0, behavior: "smooth" });
   } catch (error) {
-    console.error("Edit Lecturer Error:", error);
-    alert("Unable to load lecturer.");
+    showMessage(error.message, "danger");
   }
 }
 
-// =============================================
 // DELETE LECTURER
-// =============================================
-
 async function deleteLecturer(id) {
-  if (!confirm("Are you sure you want to delete this lecturer?")) return;
+  if (!confirm("Delete this lecturer?")) return;
 
   try {
-    const response = await fetch(`${LECTURER_API_URL}/${id}`, {
+    await apiRequest(`${LECTURER_API}/${id}`, {
       method: "DELETE",
     });
 
-    const result = await response.json();
-
-    if (!response.ok || result.success === false) {
-      alert(result.message || "Failed to delete lecturer.");
-      return;
-    }
-
-    alert("Lecturer deleted successfully.");
+    showMessage("Lecturer deleted successfully.");
     await loadLecturers();
   } catch (error) {
-    console.error("Delete Lecturer Error:", error);
-    alert("Unable to connect to the server.");
+    showMessage(error.message, "danger");
   }
 }
 
-// =============================================
+// TABLE BUTTONS
+document.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-action]");
+
+  if (!button) return;
+
+  const id = Number(button.dataset.id);
+
+  if (button.dataset.action === "edit") {
+    editLecturer(id);
+  }
+
+  if (button.dataset.action === "delete") {
+    deleteLecturer(id);
+  }
+});
+
 // SEARCH LECTURERS
-// =============================================
+function searchLecturers() {
+  const query = document.getElementById(
+    "searchInput"
+  ).value.toLowerCase();
 
-function searchLecturer() {
-  const input = document.getElementById("searchLecturer");
-  if (!input) return;
-
-  const keyword = input.value.toLowerCase().trim();
-
-  document.querySelectorAll("#lecturerTable tr").forEach(function (row) {
-    row.style.display = row.innerText.toLowerCase().includes(keyword)
-      ? ""
-      : "none";
+  document.querySelectorAll(
+    "#lecturerTableBody tr"
+  ).forEach((row) => {
+    row.style.display = row.textContent
+      .toLowerCase()
+      .includes(query) ? "" : "none";
   });
 }
 
-// =============================================
+// CLEAR FORM
+function resetForm() {
+  document.getElementById("lecturerForm").reset();
+
+  document.getElementById("lecturerId").value = "";
+
+  document.getElementById("formTitle").textContent =
+    "Add Lecturer";
+
+  document.getElementById("saveBtn").textContent =
+    "Save Lecturer";
+
+  document.getElementById("messageBox").innerHTML = "";
+
+  document.getElementById("course_ids")
+    .selectedIndex = -1;
+}
+
 // LOGOUT
-// =============================================
-
-function logout(event) {
-  event.preventDefault();
-
-  localStorage.removeItem("loggedIn");
-  localStorage.removeItem("username");
+function logout() {
   localStorage.removeItem("token");
   localStorage.removeItem("user");
+  localStorage.removeItem("loggedIn");
+  localStorage.removeItem("username");
 
   window.location.href = "../index.html";
 }
 
-// =============================================
-// HTML ESCAPE
-// =============================================
-
+// HTML SAFETY
 function escapeHTML(value) {
-  if (value === null || value === undefined) return "";
-
-  return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+  return String(value ?? "").replace(
+    /[&<>"']/g,
+    (character) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
+    })[character]
+  );
 }
 
