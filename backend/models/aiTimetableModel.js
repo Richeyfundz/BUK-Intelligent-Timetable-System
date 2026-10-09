@@ -1,4 +1,4 @@
-```javascript
+
 const db = require("../config/database");
 
 // =====================================================
@@ -136,4 +136,4 @@ exports.saveGeneratedTimetable = (timetable, callback) => {
 
   db.query(sql, values, callback);
 };
-```
+
