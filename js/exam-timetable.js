@@ -1,4 +1,4 @@
-```javascript
+
 const API_URL =
   "https://buk-intelligent-timetable-system-production.up.railway.app/api/exam-timetables";
 
@@ -406,4 +406,4 @@ function escapeHtml(value) {
 }
 
 window.removeExamRow = removeExamRow;
-```
+
