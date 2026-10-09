@@ -1,4 +1,4 @@
-```javascript
+
 // =============================================
 // BUK Intelligent Timetable Management System
 // Venues Module - Railway API
@@ -319,4 +319,4 @@ function escapeHTML(value) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
-```
+
