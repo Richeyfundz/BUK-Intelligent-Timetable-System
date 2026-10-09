@@ -1,4 +1,4 @@
-```javascript
+
 // =====================================================
 // BUK-ITMS: AI TIMETABLE FRONTEND
 // File: js/ai-timetable.js
@@ -785,4 +785,4 @@ function escapeHTML(value) {
     return replacements[character];
   });
 }
-```
+
