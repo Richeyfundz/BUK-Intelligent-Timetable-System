@@ -106,7 +106,14 @@ async function saveCourse(e) {
     alert("Please fill in all required course information.");
     return;
   }
-
+console.log("Course form values:", {
+  courseCode,
+  courseTitle,
+  courseUnit,
+  courseLevel,
+  departmentId: departmentElement?.value,
+  semester: semesterElement?.value,
+});
   const course = {
     course_code: courseCode,
     course_title: courseTitle,
