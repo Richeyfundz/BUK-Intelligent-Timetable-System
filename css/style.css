@@ -1,7 +1,7 @@
 /* ==========================================
-   BUK Intelligent Timetable Management System
+   BUK INTELLIGENT TIMETABLE MANAGEMENT SYSTEM
    Main Stylesheet
-   UI Redesign - Existing Structure Preserved
+   Desktop Layout Preserved on Phone Browsers
 ========================================== */
 
 :root {
@@ -17,6 +17,10 @@
   --shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
   --shadow-hover: 0 8px 25px rgba(0, 0, 0, 0.12);
   --radius: 14px;
+
+  /* Desktop layout dimensions */
+  --sidebar-width: 260px;
+  --desktop-content-width: 1100px;
 }
 
 /* ==========================================
@@ -40,11 +44,20 @@ body {
   line-height: 1.6;
 }
 
-/* Smooth selection */
-
 ::selection {
   background: var(--primary);
   color: var(--white);
+}
+
+img {
+  max-width: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
 }
 
 /* ==========================================
@@ -58,11 +71,7 @@ body {
   align-items: center;
   padding: 30px 20px;
   background:
-    linear-gradient(
-      135deg,
-      rgba(0, 86, 166, 0.08),
-      rgba(244, 180, 0, 0.05)
-    ),
+    linear-gradient(135deg, rgba(0, 86, 166, 0.08), rgba(244, 180, 0, 0.05)),
     var(--background);
 }
 
@@ -103,6 +112,7 @@ body {
 
 .login-card input,
 .login-card select {
+  width: 100%;
   border-radius: 10px;
   border: 1px solid var(--border);
   padding: 11px 13px;
@@ -166,13 +176,10 @@ body {
 ========================================== */
 
 .sidebar {
-  width: 260px;
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
   height: 100vh;
-  background: linear-gradient(
-    180deg,
-    var(--primary),
-    var(--primary-dark)
-  );
+  background: linear-gradient(180deg, var(--primary), var(--primary-dark));
   color: var(--white);
   position: fixed;
   left: 0;
@@ -182,8 +189,6 @@ body {
   z-index: 1000;
   box-shadow: 4px 0 18px rgba(0, 0, 0, 0.08);
 }
-
-/* Sidebar scrollbar */
 
 .sidebar::-webkit-scrollbar {
   width: 5px;
@@ -217,6 +222,7 @@ body {
 .sidebar-header h1,
 .sidebar-header h2,
 .sidebar-header h3,
+.sidebar-header h4,
 .sidebar-header p {
   color: var(--white);
 }
@@ -280,8 +286,9 @@ body {
 ========================================== */
 
 .main-content {
-  margin-left: 260px;
-  width: calc(100% - 260px);
+  margin-left: var(--sidebar-width);
+  width: calc(100% - var(--sidebar-width));
+  min-width: 0;
   min-height: 100vh;
   background: var(--background);
 }
@@ -296,6 +303,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 15px;
   min-height: 72px;
   border-bottom: 1px solid var(--border);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
@@ -411,6 +419,12 @@ body {
 
 .table tbody tr:hover {
   background: rgba(0, 86, 166, 0.035);
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ==========================================
@@ -529,22 +543,28 @@ a {
 }
 
 /* ==========================================
-   RESPONSIVE - TABLETS
+   TABLET AND PHONE
+   Preserve desktop sidebar and page layout
 ========================================== */
 
 @media (max-width: 992px) {
+  /*
+    Keep the sidebar fixed at desktop width.
+    Main content remains beside the sidebar.
+  */
 
   .sidebar {
-    width: 220px;
+    width: var(--sidebar-width);
+    min-width: var(--sidebar-width);
   }
 
   .main-content {
-    margin-left: 220px;
-    width: calc(100% - 220px);
+    margin-left: var(--sidebar-width);
+    width: calc(100% - var(--sidebar-width));
   }
 
   .topbar {
-    padding: 15px 20px;
+    padding: 16px 20px;
   }
 
   .dashboard-icon {
@@ -553,59 +573,87 @@ a {
 }
 
 /* ==========================================
-   RESPONSIVE - MOBILE
+   PHONE DESKTOP-STYLE VIEW
 ========================================== */
 
 @media (max-width: 768px) {
+  html {
+    min-width: 1024px;
+    overflow-x: auto;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    min-width: 1024px;
+    overflow-x: auto;
+  }
 
   .wrapper {
-    display: block;
+    display: flex;
+    min-width: 1024px;
   }
 
   .sidebar {
-    position: relative;
-    width: 100%;
-    height: auto;
-    min-height: auto;
-    box-shadow: none;
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: var(--sidebar-width);
+    min-width: var(--sidebar-width);
+    height: 100vh;
+    min-height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    box-shadow: 4px 0 18px rgba(0, 0, 0, 0.08);
   }
 
   .sidebar-header {
-    padding: 18px;
+    padding: 24px 20px;
+  }
+
+  .sidebar-logo {
+    width: 70px;
   }
 
   .sidebar-menu {
-    padding: 8px 12px 15px;
+    padding: 12px 10px;
   }
 
   .sidebar-menu li a {
-    padding: 11px 13px;
+    padding: 12px 15px;
   }
 
   .main-content {
-    margin-left: 0;
-    width: 100%;
+    margin-left: var(--sidebar-width);
+    width: var(--desktop-content-width);
+    min-width: var(--desktop-content-width);
   }
 
   .topbar {
-    padding: 13px 15px;
-    min-height: 60px;
+    padding: 16px 28px;
+    min-height: 72px;
   }
 
   .main-content > .container,
   .main-content > .container-fluid {
-    padding: 18px 12px 25px;
+    padding: 25px 20px 30px;
   }
 
   .dashboard-card .card-body {
-    padding: 18px;
+    padding: 22px;
+  }
+
+  .card-body {
+    padding: 20px;
   }
 
   .table-responsive {
-    border-radius: 10px;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .login-wrapper {
+    min-width: 0;
     padding: 20px 15px;
   }
 
@@ -620,17 +668,20 @@ a {
 ========================================== */
 
 @media (max-width: 480px) {
-
   .sidebar-header {
-    padding: 15px;
+    padding: 24px 20px;
   }
 
   .sidebar-logo {
-    width: 60px;
+    width: 70px;
+  }
+
+  .sidebar-menu {
+    padding: 12px 10px;
   }
 
   .topbar {
-    padding: 12px;
+    padding: 16px 28px;
   }
 
   .login-card {
@@ -642,7 +693,7 @@ a {
   }
 
   .card-body {
-    padding: 15px;
+    padding: 20px;
   }
 
   .btn {
