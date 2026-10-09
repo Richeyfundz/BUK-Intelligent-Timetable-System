@@ -1,4 +1,4 @@
-```javascript
+
 // =============================================
 // BUK Intelligent Timetable Management System
 // Lecturers Module - Railway MySQL API
@@ -379,4 +379,4 @@ function escapeHTML(value) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
-```
+
