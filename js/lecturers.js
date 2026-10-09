@@ -1,7 +1,7 @@
-
+```javascript
 // =============================================
 // BUK Intelligent Timetable Management System
-// Lecturers Module - Railway MySQL API Version
+// Lecturers Module - Railway MySQL API
 // =============================================
 
 const API_BASE_URL =
@@ -12,20 +12,16 @@ const DEPARTMENT_API_URL = `${API_BASE_URL}/departments`;
 
 let editingLecturerId = null;
 
-// =============================================
-// Page Initialization
-// =============================================
-
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", async function () {
   if (localStorage.getItem("loggedIn") !== "true") {
     window.location.href = "../index.html";
     return;
   }
 
-  const currentDate = document.getElementById("currentDate");
+  const dateElement = document.getElementById("currentDate");
 
-  if (currentDate) {
-    currentDate.textContent = new Date().toLocaleDateString("en-GB", {
+  if (dateElement) {
+    dateElement.textContent = new Date().toLocaleDateString("en-GB", {
       weekday: "long",
       day: "numeric",
       month: "long",
@@ -33,13 +29,19 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  loadDepartmentDropdown();
-  loadLecturers();
+  const form = document.getElementById("lecturerForm");
 
-  const lecturerForm = document.getElementById("lecturerForm");
+  if (form) {
+    form.addEventListener("submit", saveLecturer);
+    form.addEventListener("reset", function () {
+      editingLecturerId = null;
 
-  if (lecturerForm) {
-    lecturerForm.addEventListener("submit", saveLecturer);
+      const button = form.querySelector('button[type="submit"]');
+
+      if (button) {
+        button.innerHTML = '<i class="bi bi-save"></i> Save Lecturer';
+      }
+    });
   }
 
   const searchInput = document.getElementById("searchLecturer");
@@ -48,37 +50,34 @@ document.addEventListener("DOMContentLoaded", function () {
     searchInput.addEventListener("input", searchLecturer);
   }
 
-  const logoutBtn = document.getElementById("logoutBtn");
+  const logoutButton = document.getElementById("logoutBtn");
 
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", logout);
+  if (logoutButton) {
+    logoutButton.addEventListener("click", logout);
   }
+
+  await loadDepartmentDropdown();
+  await loadLecturers();
 });
 
 // =============================================
-// Load Departments into Dropdown
+// LOAD DEPARTMENTS
 // =============================================
 
 async function loadDepartmentDropdown() {
   const dropdown = document.getElementById("department");
 
-  if (!dropdown) {
-    console.error("Department dropdown #department was not found.");
-    return;
-  }
+  if (!dropdown) return;
 
   dropdown.innerHTML = '<option value="">Loading departments...</option>';
 
   try {
     const response = await fetch(DEPARTMENT_API_URL);
-
-    if (!response.ok) {
-      throw new Error(`Department API returned HTTP ${response.status}`);
-    }
-
     const result = await response.json();
 
-    console.log("Department API Response:", result);
+    if (!response.ok || result.success === false) {
+      throw new Error(result.message || "Failed to load departments.");
+    }
 
     const departments = Array.isArray(result)
       ? result
@@ -88,19 +87,8 @@ async function loadDepartmentDropdown() {
 
     dropdown.innerHTML = '<option value="">-- Select Department --</option>';
 
-    if (departments.length === 0) {
-      dropdown.innerHTML =
-        '<option value="">No departments available</option>';
-
-      console.warn("The API returned no department records.");
-      return;
-    }
-
     departments.forEach(function (department) {
-      if (department.id == null || !department.department_name) {
-        console.warn("Skipping invalid department record:", department);
-        return;
-      }
+      if (department.id == null || !department.department_name) return;
 
       const option = document.createElement("option");
       option.value = String(department.id);
@@ -109,19 +97,10 @@ async function loadDepartmentDropdown() {
       dropdown.appendChild(option);
     });
 
-    if (dropdown.options.length <= 1) {
+    if (dropdown.options.length === 1) {
       dropdown.innerHTML =
-        '<option value="">No valid departments available</option>';
-      return;
+        '<option value="">No departments available</option>';
     }
-
-    console.log(
-      "Department dropdown loaded:",
-      Array.from(dropdown.options).map((option) => ({
-        name: option.textContent,
-        id: option.value,
-      })),
-    );
   } catch (error) {
     console.error("Department Loading Error:", error);
 
@@ -131,42 +110,29 @@ async function loadDepartmentDropdown() {
 }
 
 // =============================================
-// Save / Update Lecturer
+// SAVE OR UPDATE LECTURER
 // =============================================
 
 async function saveLecturer(event) {
   event.preventDefault();
 
   const staffId = document.getElementById("staffId").value.trim();
-  const lecturerName = document.getElementById("lecturerName").value.trim();
-  const departmentDropdown = document.getElementById("department");
-  const departmentId = departmentDropdown ? departmentDropdown.value : "";
+  const firstName = document.getElementById("firstName").value.trim();
+  const lastName = document.getElementById("lastName").value.trim();
+  const email = document.getElementById("lecturerEmail").value.trim();
+  const departmentId = document.getElementById("department").value;
 
-  if (!staffId) {
-    alert("Please enter the Staff ID.");
+  if (!staffId || !firstName || !lastName || !email || !departmentId) {
+    alert("Please complete all required fields.");
     return;
   }
-
-  if (!lecturerName) {
-    alert("Please enter the Lecturer Name.");
-    return;
-  }
-
-  if (!departmentId) {
-    alert("Please select a Department.");
-    return;
-  }
-
-  const nameParts = lecturerName.split(/\s+/);
-  const firstName = nameParts.shift();
-  const lastName = nameParts.join(" ") || "";
 
   const lecturerData = {
     department_id: Number(departmentId),
     staff_id: staffId,
     first_name: firstName,
     last_name: lastName,
-    email: "",
+    email: email,
     phone: "",
     academic_rank: "",
     specialization: "",
@@ -187,8 +153,6 @@ async function saveLecturer(event) {
 
     const result = await response.json();
 
-    console.log("Lecturer Save Response:", result);
-
     if (!response.ok || result.success === false) {
       alert(result.message || "Failed to save lecturer.");
       return;
@@ -203,13 +167,12 @@ async function saveLecturer(event) {
     editingLecturerId = null;
     document.getElementById("lecturerForm").reset();
 
-    const submitButton = document.querySelector(
+    const button = document.querySelector(
       '#lecturerForm button[type="submit"]',
     );
 
-    if (submitButton) {
-      submitButton.innerHTML =
-        '<i class="bi bi-save"></i> Save Lecturer';
+    if (button) {
+      button.innerHTML = '<i class="bi bi-save"></i> Save Lecturer';
     }
 
     await loadLecturers();
@@ -220,27 +183,21 @@ async function saveLecturer(event) {
 }
 
 // =============================================
-// Load Lecturers
+// LOAD LECTURERS
 // =============================================
 
 async function loadLecturers() {
   const table = document.getElementById("lecturerTable");
 
-  if (!table) {
-    console.error("Lecturer table not found.");
-    return;
-  }
+  if (!table) return;
 
   try {
     const response = await fetch(LECTURER_API_URL);
-
-    if (!response.ok) {
-      throw new Error(`Lecturer API returned HTTP ${response.status}`);
-    }
-
     const result = await response.json();
 
-    console.log("Lecturer API Response:", result);
+    if (!response.ok || result.success === false) {
+      throw new Error(result.message || "Failed to load lecturers.");
+    }
 
     const lecturers = Array.isArray(result)
       ? result
@@ -264,12 +221,12 @@ async function loadLecturers() {
     lecturers.forEach(function (lecturer) {
       const row = document.createElement("tr");
 
-      const fullName =
+      const name =
         `${lecturer.first_name || ""} ${lecturer.last_name || ""}`.trim();
 
       row.innerHTML = `
         <td>${escapeHTML(lecturer.staff_id)}</td>
-        <td>${escapeHTML(fullName)}</td>
+        <td>${escapeHTML(name)}</td>
         <td>${escapeHTML(lecturer.department_name || "N/A")}</td>
         <td>
           <button
@@ -308,13 +265,53 @@ async function loadLecturers() {
 }
 
 // =============================================
-// Delete Lecturer
+// EDIT LECTURER
+// =============================================
+
+async function editLecturer(id) {
+  try {
+    const response = await fetch(`${LECTURER_API_URL}/${id}`);
+    const result = await response.json();
+
+    if (!response.ok || result.success === false) {
+      alert(result.message || "Lecturer not found.");
+      return;
+    }
+
+    const lecturer = result.data;
+
+    await loadDepartmentDropdown();
+
+    document.getElementById("staffId").value = lecturer.staff_id || "";
+    document.getElementById("firstName").value = lecturer.first_name || "";
+    document.getElementById("lastName").value = lecturer.last_name || "";
+    document.getElementById("lecturerEmail").value = lecturer.email || "";
+    document.getElementById("department").value =
+      String(lecturer.department_id || "");
+
+    editingLecturerId = id;
+
+    const button = document.querySelector(
+      '#lecturerForm button[type="submit"]',
+    );
+
+    if (button) {
+      button.innerHTML = '<i class="bi bi-save"></i> Update Lecturer';
+    }
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  } catch (error) {
+    console.error("Edit Lecturer Error:", error);
+    alert("Unable to load lecturer.");
+  }
+}
+
+// =============================================
+// DELETE LECTURER
 // =============================================
 
 async function deleteLecturer(id) {
-  if (!confirm("Are you sure you want to delete this lecturer?")) {
-    return;
-  }
+  if (!confirm("Are you sure you want to delete this lecturer?")) return;
 
   try {
     const response = await fetch(`${LECTURER_API_URL}/${id}`, {
@@ -337,66 +334,16 @@ async function deleteLecturer(id) {
 }
 
 // =============================================
-// Edit Lecturer
-// =============================================
-
-async function editLecturer(id) {
-  try {
-    const response = await fetch(`${LECTURER_API_URL}/${id}`);
-
-    const result = await response.json();
-
-    if (!response.ok || result.success === false) {
-      alert(result.message || "Lecturer not found.");
-      return;
-    }
-
-    const lecturer = result.data;
-
-    await loadDepartmentDropdown();
-
-    document.getElementById("staffId").value = lecturer.staff_id || "";
-
-    document.getElementById("lecturerName").value =
-      `${lecturer.first_name || ""} ${lecturer.last_name || ""}`.trim();
-
-    document.getElementById("department").value =
-      String(lecturer.department_id || "");
-
-    editingLecturerId = id;
-
-    const submitButton = document.querySelector(
-      '#lecturerForm button[type="submit"]',
-    );
-
-    if (submitButton) {
-      submitButton.innerHTML =
-        '<i class="bi bi-save"></i> Update Lecturer';
-    }
-
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
-  } catch (error) {
-    console.error("Edit Lecturer Error:", error);
-    alert("Unable to load lecturer.");
-  }
-}
-
-// =============================================
-// Search Lecturer
+// SEARCH LECTURERS
 // =============================================
 
 function searchLecturer() {
-  const searchInput = document.getElementById("searchLecturer");
+  const input = document.getElementById("searchLecturer");
+  if (!input) return;
 
-  if (!searchInput) return;
+  const keyword = input.value.toLowerCase().trim();
 
-  const keyword = searchInput.value.toLowerCase().trim();
-  const rows = document.querySelectorAll("#lecturerTable tr");
-
-  rows.forEach(function (row) {
+  document.querySelectorAll("#lecturerTable tr").forEach(function (row) {
     row.style.display = row.innerText.toLowerCase().includes(keyword)
       ? ""
       : "none";
@@ -404,7 +351,7 @@ function searchLecturer() {
 }
 
 // =============================================
-// Logout
+// LOGOUT
 // =============================================
 
 function logout(event) {
@@ -419,13 +366,11 @@ function logout(event) {
 }
 
 // =============================================
-// HTML Escape
+// HTML ESCAPE
 // =============================================
 
 function escapeHTML(value) {
-  if (value === null || value === undefined) {
-    return "";
-  }
+  if (value === null || value === undefined) return "";
 
   return String(value)
     .replace(/&/g, "&amp;")
@@ -434,3 +379,4 @@ function escapeHTML(value) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
+```
