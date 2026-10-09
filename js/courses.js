@@ -75,12 +75,21 @@ async function loadDepartments() {
     departmentSelect.innerHTML = '<option value="">Select Department</option>';
 
     departments.forEach((department) => {
-      departmentSelect.innerHTML += `
-        <option value="${department.id}">
-          ${department.department_name}
-        </option>
-      `;
-    });
+  const option = document.createElement("option");
+
+  option.value = department.id;
+  option.textContent = department.department_name;
+
+  departmentSelect.appendChild(option);
+});
+
+console.log(
+  "Department options loaded:",
+  Array.from(departmentSelect.options).map((option) => ({
+    text: option.textContent.trim(),
+    value: option.value,
+  }))
+);
   } catch (error) {
     console.error("Department loading error:", error);
   }
