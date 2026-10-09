@@ -1,475 +1,171 @@
+
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Timetable | BUK-ITMS</title>
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
-    <title>AI Timetable | BUK Intelligent Timetable Management System</title>
+  <style>
+    body {
+      background: #f4f7fb;
+      color: #1c2b3a;
+    }
 
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
+    .page-header {
+      background: #073b75;
+      color: white;
+      border-radius: 12px;
+      padding: 22px;
+    }
 
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
-      rel="stylesheet"
-    />
+    .settings-card, .timetable-card {
+      background: white;
+      border: 0;
+      border-radius: 12px;
+      box-shadow: 0 3px 15px rgba(0,0,0,.06);
+    }
 
-    <link rel="stylesheet" href="../css/style.css" />
-  </head>
+    .table-responsive {
+      border-radius: 8px;
+    }
 
-  <body>
-    <div class="wrapper">
-      <!-- ============================= -->
-      <!-- SIDEBAR -->
-      <!-- ============================= -->
+    #timetableTable td, #timetableTable th {
+      vertical-align: middle;
+      white-space: nowrap;
+    }
 
-      <aside class="sidebar">
-        <div class="sidebar-header text-center">
-          <img
-  src="../buk-logo.png.JPG"
-  class="sidebar-logo"
-  alt="BUK Logo"
-/>
+    .prayer-row td {
+      background: #fff3cd;
+      color: #664d03;
+      font-weight: 600;
+      text-align: center;
+    }
 
-          <h4 class="mt-3">BUK ITMS</h4>
+    .course-card {
+      background: #eaf2ff;
+      border-left: 4px solid #0d6efd;
+      border-radius: 6px;
+      padding: 8px;
+      white-space: normal;
+      min-width: 150px;
+    }
 
-          <small> Intelligent Timetable System </small>
+    .course-card small {
+      display: block;
+      margin-top: 3px;
+    }
+
+    .status-message {
+      white-space: pre-line;
+    }
+  </style>
+</head>
+
+<body>
+<div class="container-fluid py-4 px-3 px-lg-4">
+
+  <div class="page-header mb-4">
+    <h2 class="mb-1"><i class="bi bi-calendar-week"></i> AI-Assisted Timetable</h2>
+    <p class="mb-0">Bayero University Kano — Faculty of Computing</p>
+  </div>
+
+  <div class="settings-card p-4 mb-4">
+    <h5 class="mb-3">Timetable Generation Settings</h5>
+
+    <form id="generatorForm">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label for="semester" class="form-label">Semester</label>
+          <select id="semester" class="form-select" required>
+            <option value="First">First Semester</option>
+            <option value="Second">Second Semester</option>
+          </select>
         </div>
 
-        <ul class="sidebar-menu">
-          <li>
-            <a href="dashboard.html">
-              <i class="bi bi-speedometer2"></i>
-              Dashboard
-            </a>
-          </li>
-
-          <li>
-            <a href="departments.html">
-              <i class="bi bi-building"></i>
-              Departments
-            </a>
-          </li>
-
-          <li>
-            <a href="courses.html">
-              <i class="bi bi-book"></i>
-              Courses
-            </a>
-          </li>
-
-          <li>
-            <a href="lecturers.html">
-              <i class="bi bi-person-workspace"></i>
-              Lecturers
-            </a>
-          </li>
-
-          <li>
-            <a href="students.html">
-              <i class="bi bi-mortarboard"></i>
-              Students
-            </a>
-          </li>
-
-          <li>
-            <a href="venues.html">
-              <i class="bi bi-bank"></i>
-              Venues
-            </a>
-          </li>
-
-          <li class="active">
-            <a href="ai-timetable.html">
-              <i class="bi bi-cpu"></i>
-              AI Timetable
-            </a>
-          </li>
-
-          <li>
-            <a href="exam-timetable.html">
-              <i class="bi bi-calendar-check"></i>
-              Exam Timetable
-            </a>
-          </li>
-
-          <li>
-            <a href="reports.html">
-              <i class="bi bi-bar-chart"></i>
-              Reports
-            </a>
-          </li>
-
-          <li>
-            <a href="settings.html">
-              <i class="bi bi-gear"></i>
-              Settings
-            </a>
-          </li>
-
-          <li>
-            <a href="about-system.html">
-              <i class="bi bi-info-circle"></i>
-              About System
-            </a>
-          </li>
-
-          <li>
-            <a href="about-developer.html">
-              <i class="bi bi-person-badge"></i>
-              About Developer
-            </a>
-          </li>
-
-          <li>
-            <a href="../index.html" id="logoutBtn">
-              <i class="bi bi-box-arrow-left"></i>
-              Logout
-            </a>
-          </li>
-        </ul>
-      </aside>
-
-      <!-- ============================= -->
-      <!-- MAIN CONTENT -->
-      <!-- ============================= -->
-
-      <main class="main-content">
-        <!-- TOP BAR -->
-
-        <nav class="topbar">
-          <div>
-            <h3>AI Timetable Generator</h3>
-
-            <small>
-              Automatic semester timetable scheduling using AI algorithm
-            </small>
-          </div>
-
-          <span id="currentDate"></span>
-        </nav>
-
-        <!-- ============================= -->
-        <!-- PAGE CONTENT -->
-        <!-- ============================= -->
-
-        <div class="container-fluid mt-4">
-          <!-- ============================= -->
-          <!-- GENERATOR CARD -->
-          <!-- ============================= -->
-
-          <div class="card shadow border-0">
-            <div class="card-header bg-primary text-white">
-              <h5 class="mb-0">
-                <i class="bi bi-cpu"></i>
-                Generate Intelligent Timetable
-              </h5>
-            </div>
-
-            <div class="card-body">
-              <!-- ============================= -->
-              <!-- SETTINGS -->
-              <!-- ============================= -->
-
-              <div class="row g-3 mb-4">
-                <!-- LEVEL -->
-
-                <div class="col-md-4">
-                  <label for="level" class="form-label fw-bold">
-                    <i class="bi bi-layers"></i>
-                    Level
-                  </label>
-
-                  <select id="level" class="form-select" required>
-                    <option value="">Select Level</option>
-
-                    <option value="100">100 Level</option>
-
-                    <option value="200">200 Level</option>
-
-                    <option value="300">300 Level</option>
-
-                    <option value="400">400 Level</option>
-
-                    <option value="500">500 Level</option>
-
-                    <option value="PG">Postgraduate</option>
-                  </select>
-                </div>
-
-                <!-- SEMESTER -->
-
-                <div class="col-md-4">
-                  <label for="semester" class="form-label fw-bold">
-                    <i class="bi bi-calendar3"></i>
-                    Semester
-                  </label>
-
-                  <select id="semester" class="form-select" required>
-                    <option value="">Select Semester</option>
-
-                    <option value="First">First Semester</option>
-
-                    <option value="Second">Second Semester</option>
-                  </select>
-                </div>
-
-                <!-- ACADEMIC YEAR -->
-
-                <div class="col-md-4">
-                  <label for="academicYear" class="form-label fw-bold">
-                    <i class="bi bi-calendar-range"></i>
-                    Academic Year
-                  </label>
-
-                  <input
-                    type="text"
-                    id="academicYear"
-                    class="form-control"
-                    value="2026/2027"
-                    placeholder="e.g. 2026/2027"
-                    required
-                  />
-                </div>
-
-                <!-- SEMESTER START DATE -->
-
-                <div class="col-md-6">
-                  <label for="startDate" class="form-label fw-bold">
-                    <i class="bi bi-calendar-event"></i>
-                    Semester Start Date
-                  </label>
-
-                  <input
-                    type="date"
-                    id="startDate"
-                    class="form-control"
-                    required
-                  />
-
-                  <small class="text-muted">
-                    Select the first day of the semester.
-                  </small>
-                </div>
-
-                <!-- SEMESTER END DATE -->
-
-                <div class="col-md-6">
-                  <label for="endDate" class="form-label fw-bold">
-                    <i class="bi bi-calendar-check"></i>
-                    Semester End Date
-                  </label>
-
-                  <input
-                    type="date"
-                    id="endDate"
-                    class="form-control"
-                    required
-                  />
-
-                  <small class="text-muted">
-                    Select the final day of the semester.
-                  </small>
-                </div>
-              </div>
-
-              <!-- ============================= -->
-              <!-- ALGORITHM INFORMATION -->
-              <!-- ============================= -->
-
-              <div class="row align-items-center">
-                <div class="col-md-8">
-                  <p class="mb-2">
-                    The system automatically creates a semester timetable using:
-                  </p>
-
-                  <ul class="mb-0">
-                    <li>Constraint Satisfaction Algorithm</li>
-
-                    <li>Greedy Scheduling Algorithm</li>
-
-                    <li>Conflict Detection System</li>
-
-                    <li>Assigned Lecturer-Course Relationships</li>
-
-                    <li>Available Venue Detection</li>
-
-                    <li>Semester Date Range Scheduling</li>
-                  </ul>
-                </div>
-
-                <!-- GENERATE BUTTON -->
-
-                <div class="col-md-4 text-center mt-3 mt-md-0">
-                  <button
-                    id="generateBtn"
-                    class="btn btn-primary btn-lg"
-                    type="button"
-                  >
-                    <i class="bi bi-lightning-charge"></i>
-                    Generate Timetable
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- ============================= -->
-          <!-- GENERATED TIMETABLE -->
-          <!-- ============================= -->
-
-          <div class="card shadow mt-4">
-            <!-- HEADER -->
-
-            <div class="card-header bg-dark text-white">
-              <div class="d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">
-                  <i class="bi bi-calendar3"></i>
-
-                  Generated Semester Timetable
-                </h5>
-
-                <div>
-                  <!-- SAVE -->
-
-                  <button
-                    id="saveTimetable"
-                    class="btn btn-success btn-sm me-2"
-                    style="display: none"
-                    type="button"
-                  >
-                    <i class="bi bi-check-circle"></i>
-                    Approve & Save
-                  </button>
-
-                  <!-- CLEAR -->
-
-                  <button
-                    id="clearTimetable"
-                    class="btn btn-danger btn-sm"
-                    type="button"
-                  >
-                    <i class="bi bi-trash"></i>
-                    Clear
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- TABLE BODY -->
-
-            <div class="card-body">
-              <div class="table-responsive">
-                <table class="table table-bordered table-hover align-middle">
-                  <thead class="table-primary">
-                    <tr>
-                      <th>Course</th>
-
-                      <th>Lecturer</th>
-
-                      <th>Venue</th>
-
-                      <th>Level</th>
-
-                      <th>Date</th>
-
-                      <th>Day</th>
-
-                      <th>Time</th>
-
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-
-                  <tbody id="timetableTable">
-                    <tr>
-                      <td colspan="8" class="text-center text-muted py-4">
-                        <i class="bi bi-calendar-x fs-3 d-block mb-2"></i>
-
-                        No timetable generated yet.
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <!-- ============================= -->
-          <!-- INFORMATION CARD -->
-          <!-- ============================= -->
-
-          <div class="card shadow mt-4 border-0">
-            <div class="card-body">
-              <h5>
-                <i class="bi bi-info-circle text-primary"></i>
-
-                How AI Timetable Generation Works
-              </h5>
-
-              <hr />
-
-              <div class="row">
-                <!-- STEP 1 -->
-
-                <div class="col-md-4">
-                  <h6>
-                    <i class="bi bi-1-circle text-primary"></i>
-
-                    Select Requirements
-                  </h6>
-
-                  <p class="text-muted small">
-                    Select the level, semester, academic year, semester start
-                    date and semester end date.
-                  </p>
-                </div>
-
-                <!-- STEP 2 -->
-
-                <div class="col-md-4">
-                  <h6>
-                    <i class="bi bi-2-circle text-primary"></i>
-
-                    AI Generation
-                  </h6>
-
-                  <p class="text-muted small">
-                    The system checks courses, their assigned lecturers,
-                    available venues, dates and scheduling constraints to
-                    generate a conflict-free semester timetable.
-                  </p>
-                </div>
-
-                <!-- STEP 3 -->
-
-                <div class="col-md-4">
-                  <h6>
-                    <i class="bi bi-3-circle text-primary"></i>
-
-                    Review & Save
-                  </h6>
-
-                  <p class="text-muted small">
-                    Review the generated lecture sessions, make changes if
-                    necessary, then approve and save the timetable to the
-                    database.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div class="col-md-4">
+          <label for="academicYear" class="form-label">Academic Year</label>
+          <input id="academicYear" class="form-control"
+                 value="2026/2027" required>
         </div>
-      </main>
+
+        <div class="col-md-4">
+          <label for="startDate" class="form-label">Semester Start Date</label>
+          <input id="startDate" type="date" class="form-control" required>
+        </div>
+
+        <div class="col-md-4">
+          <label for="endDate" class="form-label">Semester End Date</label>
+          <input id="endDate" type="date" class="form-control" required>
+        </div>
+      </div>
+
+      <div class="alert alert-info mt-3 mb-0">
+        <strong>Prayer breaks:</strong>
+        Monday–Thursday, 1:00 pm–2:00 pm.
+        Friday Jumu'ah, 1:00 pm–2:30 pm.
+        The generator automatically considers all eligible course levels.
+      </div>
+
+      <div class="d-flex flex-wrap gap-2 mt-4">
+        <button id="generateBtn" type="submit" class="btn btn-primary">
+          <i class="bi bi-magic"></i> Generate Timetable
+        </button>
+
+        <button id="saveTimetable" type="button" class="btn btn-success" hidden>
+          <i class="bi bi-save"></i> Save Timetable
+        </button>
+
+        <button id="clearTimetable" type="button" class="btn btn-outline-danger">
+          Clear Preview
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div id="statusMessage" class="alert d-none status-message" role="status"></div>
+
+  <div id="timetableSummary" class="row g-3 mb-4"></div>
+
+  <div class="timetable-card p-3 p-lg-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+      <div>
+        <h5 class="mb-1">Generated Weekly Timetable</h5>
+        <small class="text-secondary">Monday–Friday · All eligible levels</small>
+      </div>
+      <button id="downloadCsv" type="button" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-download"></i> Export CSV
+      </button>
     </div>
 
-    <!-- ============================= -->
-    <!-- AI TIMETABLE JAVASCRIPT -->
-    <!-- ============================= -->
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover">
+        <thead class="table-primary">
+          <tr>
+            <th>Day / Time</th>
+            <th>100 Level</th>
+            <th>200 Level</th>
+            <th>300 Level</th>
+            <th>400 Level</th>
+            <th>Other Levels</th>
+          </tr>
+        </thead>
+        <tbody id="timetableTable">
+          <tr>
+            <td colspan="6" class="text-center text-secondary py-4">
+              Set the semester dates and select Generate Timetable.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 
-    <script src="../js/ai-timetable.js"></script>
-  </body>
+</div>
+
+<script src="../js/ai-timetable.js"></script>
+</body>
 </html>
