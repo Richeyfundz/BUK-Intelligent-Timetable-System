@@ -1,666 +1,788 @@
+```javascript
 // =====================================================
-// BUK AI TIMETABLE - FRONTEND
-// COMPLETE 100-400 LEVEL GENERATOR
+// BUK-ITMS: AI TIMETABLE FRONTEND
+// File: js/ai-timetable.js
 // =====================================================
 
 const API_BASE_URL =
   "https://buk-intelligent-timetable-system-production.up.railway.app/api";
-const API_URL = `${API_BASE_URL}/ai-timetables`;
+
+const AI_TIMETABLE_URL = `${API_BASE_URL}/ai-timetables`;
 
 let generatedTimetable = [];
 
 // =====================================================
-// PAGE LOAD
+// INITIALIZE PAGE
 // =====================================================
 
 document.addEventListener("DOMContentLoaded", () => {
-  checkLogin();
+  const form = document.getElementById("generatorForm");
+  const saveButton = document.getElementById("saveTimetable");
+  const clearButton = document.getElementById("clearTimetable");
+  const csvButton = document.getElementById("downloadCsv");
 
-  const generateBtn = document.getElementById("generateBtn");
-  const saveBtn = document.getElementById("saveTimetable");
-  const clearBtn = document.getElementById("clearTimetable");
-  const logoutBtn = document.getElementById("logoutBtn");
-
-  if (generateBtn) {
-    generateBtn.addEventListener("click", generateTimetable);
+  if (form) {
+    form.addEventListener("submit", generateTimetable);
   }
 
-  if (saveBtn) {
-    saveBtn.addEventListener("click", saveTimetable);
+  if (saveButton) {
+    saveButton.addEventListener("click", saveTimetable);
   }
 
-  if (clearBtn) {
-    clearBtn.addEventListener("click", clearTimetable);
+  if (clearButton) {
+    clearButton.addEventListener("click", clearTimetable);
   }
 
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", logout);
+  if (csvButton) {
+    csvButton.addEventListener("click", exportCSV);
   }
 
-  // Set today's date as minimum for semester dates
-  const startDate = document.getElementById("startDate");
-  const endDate = document.getElementById("endDate");
-
-  if (startDate && endDate) {
-    startDate.addEventListener("change", () => {
-      endDate.min = startDate.value;
-
-      if (endDate.value && endDate.value < startDate.value) {
-        endDate.value = "";
-      }
-    });
-  }
-
-  // Load previously generated timetable
   loadStoredTimetable();
 });
 
 // =====================================================
-// LOGIN CHECK
+// API HELPERS
 // =====================================================
 
-function checkLogin() {
-  const loggedIn = localStorage.getItem("loggedIn");
+function getAuthHeaders() {
+  const headers = {
+    "Content-Type": "application/json"
+  };
 
-  if (loggedIn !== "true") {
-    window.location.href = "../index.html";
+  const token = localStorage.getItem("token");
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
   }
+
+  return headers;
+}
+
+async function readAPIResponse(response) {
+  const text = await response.text();
+
+  let result;
+
+  try {
+    result = text ? JSON.parse(text) : {};
+  } catch {
+    throw new Error(
+      "The server returned an unexpected response. Please check the backend service."
+    );
+  }
+
+  if (!response.ok || result.success === false) {
+    throw new Error(
+      result.message || `Server request failed (${response.status}).`
+    );
+  }
+
+  return result;
 }
 
 // =====================================================
-// GENERATE COMPLETE TIMETABLE
+// GENERATE TIMETABLE
 // =====================================================
 
-async function generateTimetable() {
-  const semester = document.getElementById("semester")?.value;
+async function generateTimetable(event) {
+  event.preventDefault();
 
-  const academicYear = document.getElementById("academicYear")?.value.trim();
+  const semester = document.getElementById("semester").value;
+  const academicYear = document
+    .getElementById("academicYear")
+    .value.trim();
+  const startDate = document.getElementById("startDate").value;
+  const endDate = document.getElementById("endDate").value;
 
-  const startDate = document.getElementById("startDate")?.value;
-
-  const endDate = document.getElementById("endDate")?.value;
-
-  const generateBtn = document.getElementById("generateBtn");
-
-  // =================================================
-  // VALIDATION
-  // =================================================
-
-  if (!semester) {
-    alert("Please select a semester.");
-    return;
-  }
-
-  if (!academicYear) {
-    alert("Please enter the academic year.");
-    return;
-  }
-
-  if (!startDate) {
-    alert("Please select the semester start date.");
-    return;
-  }
-
-  if (!endDate) {
-    alert("Please select the semester end date.");
+  if (!semester || !academicYear || !startDate || !endDate) {
+    showMessage(
+      "Please complete all timetable settings.",
+      "warning"
+    );
     return;
   }
 
   if (startDate > endDate) {
-    alert("Semester start date cannot be after the end date.");
+    showMessage(
+      "The semester end date cannot be earlier than the start date.",
+      "warning"
+    );
     return;
   }
 
-  // =================================================
-  // LOADING STATE
-  // =================================================
+  const generateButton = document.getElementById("generateBtn");
+  const saveButton = document.getElementById("saveTimetable");
 
-  if (generateBtn) {
-    generateBtn.disabled = true;
+  generateButton.disabled = true;
+  generateButton.innerHTML =
+    '<span class="spinner-border spinner-border-sm me-2"></span>Generating...';
 
-    generateBtn.innerHTML = `
-            <span class="spinner-border spinner-border-sm me-2"></span>
-            Generating Complete Timetable...
-        `;
-  }
+  saveButton.hidden = true;
+  clearSummary();
+  showMessage(
+    "Generating the timetable. Please wait...",
+    "info"
+  );
 
   try {
-    // =================================================
-    // SEND REQUEST
-    // =================================================
-
-    const response = await fetch(`${API_URL}/generate`, {
+    const response = await fetch(`${AI_TIMETABLE_URL}/generate`, {
       method: "POST",
-
-      headers: {
-        "Content-Type": "application/json",
-      },
-
+      headers: getAuthHeaders(),
       body: JSON.stringify({
-        semester,
-
+        semester: semester,
         academic_year: academicYear,
-
         start_date: startDate,
-
-        end_date: endDate,
-      }),
+        end_date: endDate
+      })
     });
 
-    const result = await response.json();
+    const result = await readAPIResponse(response);
 
-    if (!response.ok || !result.success) {
-      throw new Error(result.message || "Unable to generate timetable.");
+    const data = result.data ?? result;
+
+    const timetable =
+      data.generatedTimetable ??
+      data.timetable ??
+      data.generated_timetable;
+
+    if (!Array.isArray(timetable)) {
+      throw new Error(
+        "The server response did not contain a timetable. Please check the backend controller response."
+      );
     }
 
-    // =================================================
-    // STORE GENERATED TIMETABLE
-    // =================================================
+    if (timetable.length === 0) {
+      generatedTimetable = [];
+      displayTimetable([]);
+      showMessage(
+        "The server did not generate any timetable entries. Check that courses, lecturer assignments, venues, and semester dates are available.",
+        "warning"
+      );
+      return;
+    }
 
-    generatedTimetable = Array.isArray(result.data) ? result.data : [];
+    generatedTimetable = timetable.map((item) => ({
+      ...item,
+      academic_year: item.academic_year || academicYear,
+      semester: item.semester || semester
+    }));
 
     localStorage.setItem(
-      "aiGeneratedTimetable",
-      JSON.stringify(generatedTimetable),
+      "generatedTimetable",
+      JSON.stringify(generatedTimetable)
     );
 
-    // =================================================
-    // DISPLAY
-    // =================================================
-
     displayTimetable(generatedTimetable);
+    showSummary(generatedTimetable, data.summary);
 
-    // =================================================
-    // SHOW SUMMARY
-    // =================================================
+    saveButton.hidden = false;
 
-    showSummary(result.summary);
-
-    alert("Complete timetable generated successfully!");
+    showMessage(
+      `Timetable generated successfully: ${generatedTimetable.length} scheduled course session(s). Review the timetable before saving it.`,
+      "success"
+    );
   } catch (error) {
-    console.error("Timetable generation error:", error);
+    console.error("Generate Timetable Error:", error);
 
-    alert(error.message || "An error occurred while generating the timetable.");
+    showMessage(
+      error.message ||
+        "Failed to generate the timetable. Please check your internet connection and backend service.",
+      "danger"
+    );
   } finally {
-    if (generateBtn) {
-      generateBtn.disabled = false;
-
-      generateBtn.innerHTML = `
-                <i class="bi bi-stars me-1"></i>
-                Generate Complete Timetable
-            `;
-    }
+    generateButton.disabled = false;
+    generateButton.innerHTML =
+      '<i class="bi bi-magic"></i> Generate Timetable';
   }
 }
 
 // =====================================================
-// DISPLAY COMPLETE TIMETABLE
+// DISPLAY TIMETABLE IN LEVEL COLUMNS
 // =====================================================
 
 function displayTimetable(timetable) {
   const tableBody = document.getElementById("timetableTable");
 
-  if (!tableBody) {
-    return;
-  }
+  if (!tableBody) return;
 
   tableBody.innerHTML = "";
 
-  if (!timetable || timetable.length === 0) {
+  if (!Array.isArray(timetable) || timetable.length === 0) {
     tableBody.innerHTML = `
-            <tr>
-                <td
-                    colspan="8"
-                    class="text-center text-muted py-4"
-                >
-                    No timetable generated.
-                </td>
-            </tr>
-        `;
+      <tr>
+        <td colspan="6" class="text-center text-secondary py-4">
+          No timetable entries to display.
+        </td>
+      </tr>
+    `;
 
     return;
   }
-
-  // =================================================
-  // SORT BY DATE → TIME → LEVEL
-  // =================================================
 
   const sorted = [...timetable].sort((a, b) => {
-    const dateCompare = String(a.lecture_date).localeCompare(
-      String(b.lecture_date),
+    const dateA = String(a.lecture_date || "");
+    const dateB = String(b.lecture_date || "");
+
+    if (dateA !== dateB) {
+      return dateA.localeCompare(dateB);
+    }
+
+    return String(a.start_time || "").localeCompare(
+      String(b.start_time || "")
     );
-
-    if (dateCompare !== 0) {
-      return dateCompare;
-    }
-
-    const timeCompare = String(a.start_time).localeCompare(
-      String(b.start_time),
-    );
-
-    if (timeCompare !== 0) {
-      return timeCompare;
-    }
-
-    return Number(a.level) - Number(b.level);
   });
 
-  let currentDate = "";
+  // Group entries sharing the same date and time.
+  const rows = new Map();
+  const dates = new Set();
 
-  // =================================================
-  // CREATE STRAIGHT-LINE DAILY TIMETABLE
-  // =================================================
+  sorted.forEach((course) => {
+    const date = normalizeDate(course.lecture_date);
+    const start = normalizeTime(course.start_time);
+    const end = normalizeTime(course.end_time);
 
-  sorted.forEach((item) => {
-    // =================================================
-    // NEW DAY HEADER
-    // =================================================
+    const key = `${date}|${start}|${end}`;
 
-    if (String(item.lecture_date) !== String(currentDate)) {
-      currentDate = item.lecture_date;
+    dates.add(date);
 
-      const dayHeader = document.createElement("tr");
-
-      dayHeader.className = "table-primary";
-
-      dayHeader.innerHTML = `
-                <td
-                    colspan="8"
-                    class="fw-bold py-3"
-                >
-                    <i class="bi bi-calendar3 me-2"></i>
-                    ${escapeHTML(item.day)}
-                    -
-                    ${formatDate(item.lecture_date)}
-                </td>
-            `;
-
-      tableBody.appendChild(dayHeader);
+    if (!rows.has(key)) {
+      rows.set(key, {
+        date,
+        day: course.day || getDayFromDate(date),
+        start,
+        end,
+        courses: []
+      });
     }
 
-    // =================================================
-    // COURSE ROW
-    // =================================================
+    rows.get(key).courses.push(course);
+  });
 
-    const row = document.createElement("tr");
+  const scheduleRows = Array.from(rows.values());
 
-    row.dataset.id = `${item.course_id}-${item.lecture_date}-${item.start_time}`;
+  // Add a visible prayer-break row for each scheduled date.
+  dates.forEach((date) => {
+    const day = getDayFromDate(date);
 
-    row.innerHTML = `
+    if (day === "Friday") {
+      scheduleRows.push({
+        date,
+        day,
+        start: "13:00",
+        end: "14:30",
+        prayerBreak: "Friday Jumu'ah Prayer Break",
+        courses: []
+      });
+    } else if (
+      ["Monday", "Tuesday", "Wednesday", "Thursday"].includes(day)
+    ) {
+      scheduleRows.push({
+        date,
+        day,
+        start: "13:00",
+        end: "14:00",
+        prayerBreak: "Prayer Break",
+        courses: []
+      });
+    }
+  });
 
-            <td>
-                <span class="badge bg-primary">
-                    ${escapeHTML(item.level)} Level
-                </span>
-            </td>
+  scheduleRows.sort((a, b) => {
+    const dateCompare = a.date.localeCompare(b.date);
 
-            <td class="fw-semibold">
-                ${formatTime(item.start_time)}
-                -
-                ${formatTime(item.end_time)}
-            </td>
+    if (dateCompare !== 0) return dateCompare;
 
-            <td>
-                <strong>
-                    ${escapeHTML(item.course_code)}
-                </strong>
+    return a.start.localeCompare(b.start);
+  });
 
-                <br>
+  scheduleRows.forEach((row) => {
+    const tr = document.createElement("tr");
 
-                <small class="text-muted">
-                    ${escapeHTML(item.course_title)}
-                </small>
-            </td>
+    if (row.prayerBreak) {
+      tr.className = "prayer-row";
 
-            <td>
-                ${escapeHTML(item.lecturer_name || "Not assigned")}
-            </td>
+      const cell = document.createElement("td");
+      cell.colSpan = 6;
+      cell.textContent =
+        `${row.day} — ${formatDate(row.date)} | ` +
+        `${formatTime(row.start)}–${formatTime(row.end)} | ` +
+        row.prayerBreak;
 
-            <td>
-                ${escapeHTML(item.venue_name || "Not assigned")}
+      tr.appendChild(cell);
+      tableBody.appendChild(tr);
+      return;
+    }
 
-                ${
-                  item.venue_code
-                    ? `
-                        <br>
-                        <small class="text-muted">
-                            ${escapeHTML(item.venue_code)}
-                        </small>
-                        `
-                    : ""
-                }
-            </td>
+    const timeCell = document.createElement("td");
+    timeCell.innerHTML = `
+      <strong>${escapeHTML(row.day)}</strong>
+      <small class="d-block text-secondary">
+        ${escapeHTML(formatDate(row.date))}
+      </small>
+      <small class="d-block">
+        ${escapeHTML(formatTime(row.start))}–${escapeHTML(formatTime(row.end))}
+      </small>
+    `;
+    tr.appendChild(timeCell);
 
-            <td>
-                <span class="badge bg-success">
-                    No Clash
-                </span>
-            </td>
+    const levelColumns = [
+      { key: "100", label: "100 Level" },
+      { key: "200", label: "200 Level" },
+      { key: "300", label: "300 Level" },
+      { key: "400", label: "400 Level" },
+      { key: "other", label: "Other Levels" }
+    ];
 
-            <td>
-                ${escapeHTML(item.session || "Lecture")}
-            </td>
+    levelColumns.forEach((column) => {
+      const td = document.createElement("td");
 
-            <td>
-                <button
-                    type="button"
-                    class="btn btn-sm btn-outline-danger"
-                    onclick="removeTimetableRow(this)"
-                >
-                    <i class="bi bi-trash"></i>
-                </button>
-            </td>
-        `;
+      const courses = row.courses.filter((course) => {
+        const level = String(course.level ?? "")
+          .replace(/\s*level/i, "")
+          .trim();
 
-    tableBody.appendChild(row);
+        if (column.key === "other") {
+          return !["100", "200", "300", "400"].includes(level);
+        }
+
+        return level === column.key;
+      });
+
+      if (courses.length === 0) {
+        td.innerHTML = '<span class="text-muted">—</span>';
+      } else {
+        courses.forEach((course) => {
+          const card = document.createElement("div");
+          card.className = "course-card mb-2";
+
+          const code = escapeHTML(
+            course.course_code || "Course"
+          );
+
+          const title = escapeHTML(
+            course.course_title || course.title || ""
+          );
+
+          const lecturer = escapeHTML(
+            course.lecturer_name ||
+              course.lecturer ||
+              "Not provided"
+          );
+
+          const venue = escapeHTML(
+            course.venue_name ||
+              course.venue_code ||
+              course.venue ||
+              "Not provided"
+          );
+
+          card.innerHTML = `
+            <strong>${code}</strong>
+            <div>${title}</div>
+            <small><i class="bi bi-person"></i> ${lecturer}</small>
+            <small><i class="bi bi-geo-alt"></i> ${venue}</small>
+          `;
+
+          td.appendChild(card);
+        });
+      }
+
+      tr.appendChild(td);
+    });
+
+    tableBody.appendChild(tr);
   });
 }
 
 // =====================================================
-// FORMAT DATE
+// SUMMARY CARDS
 // =====================================================
 
-function formatDate(dateString) {
-  if (!dateString) {
-    return "";
-  }
+function showSummary(timetable, serverSummary = null) {
+  const container = document.getElementById("timetableSummary");
 
-  const date = new Date(`${dateString}T00:00:00`);
+  if (!container) return;
 
-  if (isNaN(date.getTime())) {
-    return dateString;
-  }
-
-  return date.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-// =====================================================
-// FORMAT TIME
-// =====================================================
-
-function formatTime(time) {
-  if (!time) {
-    return "";
-  }
-
-  const parts = String(time).split(":");
-
-  if (parts.length < 2) {
-    return time;
-  }
-
-  let hour = parseInt(parts[0], 10);
-
-  const minute = parts[1];
-
-  const suffix = hour >= 12 ? "PM" : "AM";
-
-  hour = hour % 12 || 12;
-
-  return `${String(hour).padStart(2, "0")}:${minute} ${suffix}`;
-}
-
-// =====================================================
-// REMOVE ROW
-// =====================================================
-
-function removeTimetableRow(button) {
-  const row = button.closest("tr");
-
-  if (!row) {
-    return;
-  }
-
-  const id = row.dataset.id;
-
-  generatedTimetable = generatedTimetable.filter(
-    (item) =>
-      `${item.course_id}-${item.lecture_date}-${item.start_time}` !== id,
+  const courses = new Set(
+    timetable.map((item) => item.course_id ?? item.course_code)
   );
 
-  localStorage.setItem(
-    "aiGeneratedTimetable",
-    JSON.stringify(generatedTimetable),
+  const levels = new Set(
+    timetable.map((item) => String(item.level ?? "Other"))
   );
 
-  displayTimetable(generatedTimetable);
+  const venues = new Set(
+    timetable.map(
+      (item) =>
+        item.venue_id ?? item.venue_code ?? item.venue_name
+    )
+  );
+
+  const stats = [
+    {
+      title: "Scheduled Sessions",
+      value: timetable.length,
+      icon: "bi-calendar-check"
+    },
+    {
+      title: "Courses Scheduled",
+      value: courses.size,
+      icon: "bi-book"
+    },
+    {
+      title: "Levels Covered",
+      value: levels.size,
+      icon: "bi-mortarboard"
+    },
+    {
+      title: "Venues Used",
+      value: venues.size,
+      icon: "bi-building"
+    }
+  ];
+
+  container.innerHTML = stats
+    .map(
+      (stat) => `
+        <div class="col-6 col-lg-3">
+          <div class="settings-card p-3 h-100">
+            <div class="text-secondary small">
+              <i class="bi ${stat.icon} me-1"></i>
+              ${stat.title}
+            </div>
+            <div class="fs-3 fw-bold">
+              ${stat.value}
+            </div>
+          </div>
+        </div>
+      `
+    )
+    .join("");
+
+  if (serverSummary && typeof serverSummary === "object") {
+    console.log("Backend timetable summary:", serverSummary);
+  }
+}
+
+function clearSummary() {
+  const container = document.getElementById("timetableSummary");
+
+  if (container) {
+    container.innerHTML = "";
+  }
 }
 
 // =====================================================
-// SAVE TIMETABLE
+// SAVE GENERATED TIMETABLE
 // =====================================================
 
 async function saveTimetable() {
-  if (!generatedTimetable || generatedTimetable.length === 0) {
-    alert("Please generate a timetable first.");
-
+  if (!generatedTimetable.length) {
+    showMessage(
+      "Generate a timetable before saving.",
+      "warning"
+    );
     return;
   }
 
-  const saveBtn = document.getElementById("saveTimetable");
+  const saveButton = document.getElementById("saveTimetable");
 
-  if (saveBtn) {
-    saveBtn.disabled = true;
-
-    saveBtn.innerHTML = `
-            <span class="spinner-border spinner-border-sm me-2"></span>
-            Saving...
-        `;
-  }
+  saveButton.disabled = true;
+  saveButton.innerHTML =
+    '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
 
   try {
-    const response = await fetch(`${API_URL}/save`, {
+    const response = await fetch(`${AI_TIMETABLE_URL}/save`, {
       method: "POST",
-
-      headers: {
-        "Content-Type": "application/json",
-      },
-
+      headers: getAuthHeaders(),
       body: JSON.stringify({
-        timetable: generatedTimetable,
-      }),
+        timetable: generatedTimetable
+      })
     });
 
-    const result = await response.json();
+    const result = await readAPIResponse(response);
 
-    if (!response.ok || !result.success) {
-      throw new Error(result.message || "Unable to save timetable.");
-    }
+    showMessage(
+      result.message ||
+        "The timetable was saved successfully.",
+      "success"
+    );
 
-    alert(result.message || "Timetable saved successfully.");
-
-    localStorage.removeItem("aiGeneratedTimetable");
+    // Hide Save after a successful response to reduce accidental
+    // duplicate submissions. Generate again to create a new preview.
+    saveButton.hidden = true;
+    localStorage.removeItem("generatedTimetable");
   } catch (error) {
-    console.error("Save timetable error:", error);
+    console.error("Save Timetable Error:", error);
 
-    alert(error.message || "An error occurred while saving the timetable.");
+    showMessage(
+      error.message ||
+        "Failed to save the timetable. Please try again.",
+      "danger"
+    );
   } finally {
-    if (saveBtn) {
-      saveBtn.disabled = false;
-
-      saveBtn.innerHTML = `
-                <i class="bi bi-save me-1"></i>
-                Save Timetable
-            `;
-    }
+    saveButton.disabled = false;
+    saveButton.innerHTML =
+      '<i class="bi bi-save"></i> Save Timetable';
   }
 }
 
 // =====================================================
-// CLEAR TIMETABLE
+// CLEAR PREVIEW
 // =====================================================
 
 function clearTimetable() {
-  if (generatedTimetable.length === 0) {
-    return;
-  }
-
-  const confirmClear = confirm(
-    "Are you sure you want to clear the generated timetable?",
-  );
-
-  if (!confirmClear) {
-    return;
-  }
-
   generatedTimetable = [];
 
-  localStorage.removeItem("aiGeneratedTimetable");
+  localStorage.removeItem("generatedTimetable");
 
-  const tableBody = document.getElementById("timetableTable");
+  displayTimetable([]);
+  clearSummary();
 
-  if (tableBody) {
-    tableBody.innerHTML = `
-            <tr>
-                <td
-                    colspan="8"
-                    class="text-center text-muted py-4"
-                >
-                    Generate a complete timetable
-                    to see the results here.
-                </td>
-            </tr>
-        `;
+  const saveButton = document.getElementById("saveTimetable");
+
+  if (saveButton) {
+    saveButton.hidden = true;
   }
 
-  const summary = document.getElementById("timetableSummary");
-
-  if (summary) {
-    summary.innerHTML = "";
-  }
+  showMessage("The timetable preview has been cleared.", "info");
 }
 
 // =====================================================
-// LOAD STORED TIMETABLE
+// RESTORE PREVIOUS PREVIEW
 // =====================================================
 
 function loadStoredTimetable() {
-  const stored = localStorage.getItem("aiGeneratedTimetable");
-
-  if (!stored) {
-    return;
-  }
-
   try {
-    generatedTimetable = JSON.parse(stored);
+    const saved = localStorage.getItem("generatedTimetable");
 
-    if (Array.isArray(generatedTimetable) && generatedTimetable.length > 0) {
-      displayTimetable(generatedTimetable);
+    if (!saved) return;
+
+    const parsed = JSON.parse(saved);
+
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      localStorage.removeItem("generatedTimetable");
+      return;
     }
-  } catch (error) {
-    console.error("Could not load stored timetable:", error);
 
-    localStorage.removeItem("aiGeneratedTimetable");
+    generatedTimetable = parsed;
+
+    displayTimetable(generatedTimetable);
+    showSummary(generatedTimetable);
+
+    const saveButton = document.getElementById("saveTimetable");
+
+    if (saveButton) {
+      saveButton.hidden = false;
+    }
+
+    showMessage(
+      "A previously generated preview has been restored. Check it before saving.",
+      "info"
+    );
+  } catch (error) {
+    console.error("Restore Timetable Error:", error);
+    localStorage.removeItem("generatedTimetable");
   }
 }
 
 // =====================================================
-// SHOW SUMMARY
+// EXPORT CSV
 // =====================================================
 
-function showSummary(summary) {
-  const container = document.getElementById("timetableSummary");
-
-  if (!container || !summary) {
+function exportCSV() {
+  if (!generatedTimetable.length) {
+    showMessage(
+      "There is no timetable to export. Generate one first.",
+      "warning"
+    );
     return;
   }
 
-  const levels = Array.isArray(summary.levels) ? summary.levels : [];
+  const headers = [
+    "Academic Year",
+    "Semester",
+    "Course Code",
+    "Course Title",
+    "Level",
+    "Lecturer",
+    "Venue",
+    "Day",
+    "Date",
+    "Start Time",
+    "End Time"
+  ];
 
-  container.innerHTML = `
+  const rows = generatedTimetable.map((item) => [
+    item.academic_year || "",
+    item.semester || "",
+    item.course_code || "",
+    item.course_title || item.title || "",
+    item.level || "",
+    item.lecturer_name || item.lecturer || "",
+    item.venue_name || item.venue_code || item.venue || "",
+    item.day || "",
+    normalizeDate(item.lecture_date),
+    normalizeTime(item.start_time),
+    normalizeTime(item.end_time)
+  ]);
 
-        <div class="row g-3 mb-4">
+  const csv = [headers, ...rows]
+    .map((row) =>
+      row
+        .map((value) => {
+          const text = String(value ?? "");
+          return `"${text.replace(/"/g, '""')}"`;
+        })
+        .join(",")
+    )
+    .join("\r\n");
 
-            <div class="col-md-3">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-body">
-                        <small class="text-muted">
-                            Courses
-                        </small>
+  const blob = new Blob(["\uFEFF" + csv], {
+    type: "text/csv;charset=utf-8;"
+  });
 
-                        <h4 class="mb-0">
-                            ${summary.total_courses || 0}
-                        </h4>
-                    </div>
-                </div>
-            </div>
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
 
-            <div class="col-md-3">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-body">
-                        <small class="text-muted">
-                            Sessions
-                        </small>
+  link.href = url;
+  link.download = "BUK-ITMS-AI-Timetable.csv";
 
-                        <h4 class="mb-0">
-                            ${summary.total_sessions || 0}
-                        </h4>
-                    </div>
-                </div>
-            </div>
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
 
-            <div class="col-md-3">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-body">
-                        <small class="text-muted">
-                            Levels
-                        </small>
+  URL.revokeObjectURL(url);
 
-                        <h4 class="mb-0">
-                            ${levels.length ? levels.join(", ") : "All"}
-                        </h4>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-3">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-body">
-                        <small class="text-muted">
-                            Status
-                        </small>
-
-                        <h4 class="mb-0 text-success">
-                            No Clash
-                        </h4>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-    `;
+  showMessage("The CSV export has been prepared.", "success");
 }
 
 // =====================================================
-// ESCAPE HTML
+// MESSAGE DISPLAY
+// =====================================================
+
+function showMessage(message, type = "info") {
+  const box = document.getElementById("statusMessage");
+
+  if (!box) return;
+
+  box.className = `alert alert-${type} status-message`;
+  box.textContent = message;
+  box.classList.remove("d-none");
+}
+
+// =====================================================
+// DATE AND TIME HELPERS
+// =====================================================
+
+function normalizeDate(value) {
+  if (!value) return "";
+
+  if (value instanceof Date) {
+    return value.toISOString().slice(0, 10);
+  }
+
+  const text = String(value);
+
+  if (/^\d{4}-\d{2}-\d{2}/.test(text)) {
+    return text.slice(0, 10);
+  }
+
+  const parsed = new Date(text);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return text;
+  }
+
+  return [
+    parsed.getFullYear(),
+    String(parsed.getMonth() + 1).padStart(2, "0"),
+    String(parsed.getDate()).padStart(2, "0")
+  ].join("-");
+}
+
+function normalizeTime(value) {
+  if (!value) return "";
+
+  const text = String(value);
+
+  // Handles values such as 08:00:00 or 08:00.
+  const match = text.match(/^(\d{1,2}):(\d{2})/);
+
+  if (match) {
+    return `${match[1].padStart(2, "0")}:${match[2]}`;
+  }
+
+  return text;
+}
+
+function formatDate(value) {
+  const dateText = normalizeDate(value);
+
+  if (!dateText) return "Date unavailable";
+
+  const parts = dateText.split("-");
+
+  if (parts.length !== 3) return dateText;
+
+  return `${parts[2]}/${parts[1]}/${parts[0]}`;
+}
+
+function formatTime(value) {
+  const normalized = normalizeTime(value);
+
+  if (!normalized) return "Time unavailable";
+
+  const parts = normalized.split(":");
+  const hour = Number(parts[0]);
+  const minute = parts[1] || "00";
+
+  if (Number.isNaN(hour)) return normalized;
+
+  const period = hour >= 12 ? "PM" : "AM";
+  const displayHour = hour % 12 || 12;
+
+  return `${displayHour}:${minute} ${period}`;
+}
+
+function getDayFromDate(value) {
+  const dateText = normalizeDate(value);
+  const parts = dateText.split("-");
+
+  if (parts.length !== 3) return "";
+
+  const date = new Date(
+    Number(parts[0]),
+    Number(parts[1]) - 1,
+    Number(parts[2])
+  );
+
+  return [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday"
+  ][date.getDay()];
+}
+
+// =====================================================
+// HTML ESCAPING
 // =====================================================
 
 function escapeHTML(value) {
-  if (value === null || value === undefined) {
-    return "";
-  }
+  return String(value ?? "").replace(/[&<>"']/g, (character) => {
+    const replacements = {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    };
 
-  return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+    return replacements[character];
+  });
 }
-
-// =====================================================
-// LOGOUT
-// =====================================================
-
-function logout() {
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
-  localStorage.removeItem("loggedIn");
-  localStorage.removeItem("username");
-
-  window.location.href = "../index.html";
-}
+```
