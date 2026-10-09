@@ -1,36 +1,30 @@
 
 // =============================================
-// BUK Intelligent Timetable Management System
-// Reports Module - Railway MySQL API Version
+// BUK-ITMS REPORTS MODULE
+// Railway API + MySQL
 // =============================================
 
 const API_BASE_URL =
   "https://buk-intelligent-timetable-system-production.up.railway.app/api";
 
-const COURSES_API_URL = `${API_BASE_URL}/courses`;
-const LECTURERS_API_URL = `${API_BASE_URL}/lecturers`;
-const STUDENTS_API_URL = `${API_BASE_URL}/students`;
-const VENUES_API_URL = `${API_BASE_URL}/venues`;
-const TIMETABLE_API_URL = `${API_BASE_URL}/timetables`;
+const REPORT_APIS = {
+  courses: `${API_BASE_URL}/courses`,
+  lecturers: `${API_BASE_URL}/lecturers`,
+  students: `${API_BASE_URL}/students`,
+  venues: `${API_BASE_URL}/venues`,
+  timetables: `${API_BASE_URL}/timetables`,
+};
 
-document.addEventListener("DOMContentLoaded", function () {
-  // =============================================
-  // Login Check
-  // =============================================
-
+document.addEventListener("DOMContentLoaded", () => {
   if (localStorage.getItem("loggedIn") !== "true") {
     window.location.href = "../index.html";
     return;
   }
 
-  // =============================================
-  // Current Date
-  // =============================================
+  const dateElement = document.getElementById("currentDate");
 
-  const currentDate = document.getElementById("currentDate");
-
-  if (currentDate) {
-    currentDate.textContent = new Date().toLocaleDateString("en-GB", {
+  if (dateElement) {
+    dateElement.textContent = new Date().toLocaleDateString("en-GB", {
       weekday: "long",
       day: "numeric",
       month: "long",
@@ -38,103 +32,194 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // =============================================
-  // Load Report Data
-  // =============================================
+  document.getElementById("logoutBtn")?.addEventListener("click", logout);
 
   loadStatistics();
-
   loadTimetableReport();
-
-  // =============================================
-  // Logout
-  // =============================================
-
-  const logoutBtn = document.getElementById("logoutBtn");
-
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", logout);
-  }
 });
 
 // =============================================
-// Load Statistics
+// FETCH API DATA
 // =============================================
 
-async function loadStatistics() {
-  try {
-    const [
-      coursesResponse,
-      lecturersResponse,
-      studentsResponse,
-      venuesResponse,
-    ] = await Promise.all([
-      fetch(COURSES_API_URL),
-      fetch(LECTURERS_API_URL),
-      fetch(STUDENTS_API_URL),
-      fetch(VENUES_API_URL),
-    ]);
+async function fetchReportData(url) {
+  const token = localStorage.getItem("token");
 
-    const coursesResult = await coursesResponse.json();
-    const lecturersResult = await lecturersResponse.json();
-    const studentsResult = await studentsResponse.json();
-    const venuesResult = await venuesResponse.json();
+  const headers = {
+    Accept: "application/json",
+  };
 
-    const courses = getDataArray(coursesResult);
-    const lecturers = getDataArray(lecturersResult);
-    const students = getDataArray(studentsResult);
-    const venues = getDataArray(venuesResult);
-
-    const reportCourses = document.getElementById("reportCourses");
-    const reportLecturers = document.getElementById("reportLecturers");
-    const reportStudents = document.getElementById("reportStudents");
-    const reportVenues = document.getElementById("reportVenues");
-
-    if (reportCourses) {
-      reportCourses.innerHTML = courses.length;
-    }
-
-    if (reportLecturers) {
-      reportLecturers.innerHTML = lecturers.length;
-    }
-
-    if (reportStudents) {
-      reportStudents.innerHTML = students.length;
-    }
-
-    if (reportVenues) {
-      reportVenues.innerHTML = venues.length;
-    }
-  } catch (error) {
-    console.error("Report Statistics Error:", error);
-
-    setReportCount("reportCourses", 0);
-    setReportCount("reportLecturers", 0);
-    setReportCount("reportStudents", 0);
-    setReportCount("reportVenues", 0);
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
   }
+
+  const response = await fetch(url, { headers });
+
+  const rawText = await response.text();
+
+  let result;
+
+  try {
+    result = rawText ? JSON.parse(rawText) : {};
+  } catch {
+    throw new Error(
+      `The API returned an invalid response. HTTP status: ${response.status}`
+    );
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      result.message ||
+        result.error ||
+        `API request failed with HTTP ${response.status}`
+    );
+  }
+
+  if (result.success === false) {
+    throw new Error(result.message || "The API reported a failure.");
+  }
+
+  return result;
 }
 
 // =============================================
-// Load Timetable Report
+// EXTRACT ARRAY FROM DIFFERENT API FORMATS
+// =============================================
+
+function getDataArray(result, possibleKeys = []) {
+  if (Array.isArray(result)) {
+    return result;
+  }
+
+  if (!result || typeof result !== "object") {
+    return [];
+  }
+
+  // Common response formats:
+  // { data: [...] }
+  // { courses: [...] }
+  // { results: [...] }
+  // { success: true, data: { courses: [...] } }
+
+  const keys = [
+    "data",
+    "results",
+    "records",
+    "items",
+    ...possibleKeys,
+  ];
+
+  for (const key of keys) {
+    if (Array.isArray(result[key])) {
+      return result[key];
+    }
+  }
+
+  if (result.data && typeof result.data === "object") {
+    for (const key of [
+      ...possibleKeys,
+      "results",
+      "records",
+      "items",
+    ]) {
+      if (Array.isArray(result.data[key])) {
+        return result.data[key];
+      }
+    }
+  }
+
+  return [];
+}
+
+// =============================================
+// LOAD STATISTICS
+// =============================================
+
+async function loadStatistics() {
+  const reports = [
+    {
+      name: "courses",
+      elementId: "reportCourses",
+      url: REPORT_APIS.courses,
+      keys: ["courses"],
+    },
+    {
+      name: "lecturers",
+      elementId: "reportLecturers",
+      url: REPORT_APIS.lecturers,
+      keys: ["lecturers"],
+    },
+    {
+      name: "students",
+      elementId: "reportStudents",
+      url: REPORT_APIS.students,
+      keys: ["students"],
+    },
+    {
+      name: "venues",
+      elementId: "reportVenues",
+      url: REPORT_APIS.venues,
+      keys: ["venues"],
+    },
+  ];
+
+  const results = await Promise.allSettled(
+    reports.map((report) => fetchReportData(report.url))
+  );
+
+  results.forEach((outcome, index) => {
+    const report = reports[index];
+    const element = document.getElementById(report.elementId);
+
+    if (!element) return;
+
+    if (outcome.status === "fulfilled") {
+      const records = getDataArray(outcome.value, report.keys);
+      element.textContent = records.length;
+
+      console.log(
+        `Reports: ${report.name}:`,
+        records.length,
+        "records"
+      );
+    } else {
+      element.textContent = "—";
+
+      console.error(
+        `Failed to load ${report.name}:`,
+        outcome.reason
+      );
+    }
+  });
+}
+
+// =============================================
+// LOAD TIMETABLE REPORT
 // =============================================
 
 async function loadTimetableReport() {
   const table = document.getElementById("reportTable");
 
   if (!table) {
-    console.error("Report table not found.");
+    console.error("Report table element #reportTable was not found.");
     return;
   }
 
+  table.innerHTML = `
+    <tr>
+      <td colspan="5" class="text-center py-4">
+        <span class="spinner-border spinner-border-sm me-2"></span>
+        Loading timetable report...
+      </td>
+    </tr>
+  `;
+
   try {
-    const response = await fetch(TIMETABLE_API_URL);
+    const result = await fetchReportData(REPORT_APIS.timetables);
 
-    const result = await response.json();
+    console.log("Timetable API response:", result);
 
-    console.log("Timetable Report API Response:", result);
-
-    const timetable = getDataArray(result);
+    const timetable = getDataArray(result, ["timetables", "timetable"]);
 
     table.innerHTML = "";
 
@@ -142,66 +227,104 @@ async function loadTimetableReport() {
       table.innerHTML = `
         <tr>
           <td colspan="5" class="text-center text-muted py-4">
-            No timetable records found.
+            No timetable records were returned by the API.
           </td>
         </tr>
       `;
-
       return;
     }
 
-    timetable.forEach(function (item) {
+    // Sort records by day and start time.
+    const dayOrder = {
+      Monday: 1,
+      Tuesday: 2,
+      Wednesday: 3,
+      Thursday: 4,
+      Friday: 5,
+      Saturday: 6,
+      Sunday: 7,
+    };
+
+    timetable.sort((a, b) => {
+      const dayA = dayOrder[a.day] || 99;
+      const dayB = dayOrder[b.day] || 99;
+
+      if (dayA !== dayB) return dayA - dayB;
+
+      return String(a.start_time || "").localeCompare(
+        String(b.start_time || "")
+      );
+    });
+
+    timetable.forEach((item) => {
       const row = document.createElement("tr");
 
-      const course =
-        item.course_code || item.course || item.course_title || "N/A";
+      const course = firstValue(
+        item.course_code,
+        item.courseCode,
+        item.course_title,
+        item.course_name,
+        item.course,
+        "N/A"
+      );
 
-      const lecturer =
-        item.lecturer_name || item.lecturer || item.lecturerName || "N/A";
+      const lecturer = firstValue(
+        item.lecturer_name,
+        item.lecturerName,
+        item.lecturer,
+        item.staff_name,
+        "N/A"
+      );
 
-      const venue = item.venue_name || item.venue || "N/A";
+      const venue = firstValue(
+        item.venue_name,
+        item.venueName,
+        item.venue_code,
+        item.venue,
+        "N/A"
+      );
 
-      const day = item.day || "N/A";
+      const day = firstValue(
+        item.day,
+        item.weekday,
+        item.exam_day,
+        "N/A"
+      );
 
       let time = "N/A";
 
-      if (item.start_time && item.end_time) {
-        time = `${formatTime(item.start_time)} - ${formatTime(item.end_time)}`;
+      const startTime = item.start_time || item.startTime;
+      const endTime = item.end_time || item.endTime;
+
+      if (startTime && endTime) {
+        time = `${formatTime(startTime)} - ${formatTime(endTime)}`;
       } else if (item.time) {
         time = item.time;
       }
 
       row.innerHTML = `
-        <td>
-          ${escapeHTML(course)}
-        </td>
-
-        <td>
-          ${escapeHTML(lecturer)}
-        </td>
-
-        <td>
-          ${escapeHTML(venue)}
-        </td>
-
-        <td>
-          ${escapeHTML(day)}
-        </td>
-
-        <td>
-          ${escapeHTML(time)}
-        </td>
+        <td>${escapeHTML(course)}</td>
+        <td>${escapeHTML(lecturer)}</td>
+        <td>${escapeHTML(venue)}</td>
+        <td>${escapeHTML(day)}</td>
+        <td>${escapeHTML(time)}</td>
       `;
 
       table.appendChild(row);
     });
+
+    console.log(
+      `Timetable report loaded: ${timetable.length} records.`
+    );
   } catch (error) {
-    console.error("Timetable Report Error:", error);
+    console.error("Timetable report error:", error);
 
     table.innerHTML = `
       <tr>
         <td colspan="5" class="text-center text-danger py-4">
-          Unable to load timetable report.
+          <i class="bi bi-exclamation-triangle me-2"></i>
+          Failed to load timetable report.
+          <div class="small mt-2">${escapeHTML(error.message)}</div>
         </td>
       </tr>
     `;
@@ -209,70 +332,50 @@ async function loadTimetableReport() {
 }
 
 // =============================================
-// Get API Data Array
+// GET FIRST AVAILABLE FIELD
 // =============================================
 
-function getDataArray(result) {
-  if (Array.isArray(result)) {
-    return result;
+function firstValue(...values) {
+  for (const value of values) {
+    if (
+      value !== null &&
+      value !== undefined &&
+      String(value).trim() !== ""
+    ) {
+      return value;
+    }
   }
 
-  if (result && Array.isArray(result.data)) {
-    return result.data;
-  }
-
-  return [];
+  return "N/A";
 }
 
 // =============================================
-// Set Report Count
-// =============================================
-
-function setReportCount(id, value) {
-  const element = document.getElementById(id);
-
-  if (element) {
-    element.innerHTML = value;
-  }
-}
-
-// =============================================
-// Format Time
+// FORMAT TIME
 // =============================================
 
 function formatTime(time) {
-  if (!time) {
-    return "";
-  }
+  if (!time) return "N/A";
 
-  const parts = String(time).split(":");
+  const value = String(time);
+  const match = value.match(/^(\d{1,2}):(\d{2})/);
 
-  if (parts.length < 2) {
-    return time;
-  }
+  if (!match) return value;
 
-  let hour = parseInt(parts[0], 10);
-  const minute = parts[1];
-
+  let hour = Number(match[1]);
+  const minute = match[2];
   const period = hour >= 12 ? "PM" : "AM";
 
-  hour = hour % 12;
-
-  if (hour === 0) {
-    hour = 12;
-  }
+  hour = hour % 12 || 12;
 
   return `${hour}:${minute} ${period}`;
 }
 
 // =============================================
-// HTML Escape
+// ESCAPE HTML
 // =============================================
 
 function escapeHTML(value) {
-  if (value === null || value === undefined) {
-    return "";
-  }
+  if (value === null || value === undefined) return "";
 
   return String(value)
     .replace(/&/g, "&amp;")
@@ -283,11 +386,11 @@ function escapeHTML(value) {
 }
 
 // =============================================
-// Logout
+// LOGOUT
 // =============================================
 
-function logout(e) {
-  e.preventDefault();
+function logout(event) {
+  event.preventDefault();
 
   localStorage.removeItem("loggedIn");
   localStorage.removeItem("username");
@@ -296,3 +399,4 @@ function logout(e) {
 
   window.location.href = "../index.html";
 }
+
