@@ -3,8 +3,6 @@ const aiTimetableModel = require("../models/aiTimetableModel");
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
-// Each lecture lasts two hours.
-// The Friday afternoon session starts after the longer Jumu'ah break.
 const TIME_SLOTS = {
   Monday: [
     { start: "08:00:00", end: "10:00:00" },
@@ -44,14 +42,19 @@ function formatDate(date) {
 function normalizeDate(value) {
   if (!value) return "";
 
-  if (value instanceof Date) {
-    return formatDate(value);
-  }
+  if (value instanceof Date) return formatDate(value);
 
-  const text = String(value);
-  const match = text.match(/^(\d{4}-\d{2}-\d{2})/);
+  const match = String(value).match(/^(\d{4}-\d{2}-\d{2})/);
 
   return match ? match[1] : "";
+}
+
+function validDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+
+  const date = new Date(`${value}T12:00:00`);
+
+  return !Number.isNaN(date.getTime()) && formatDate(date) === value;
 }
 
 function getWeekdays(startDate, endDate) {
@@ -62,12 +65,9 @@ function getWeekdays(startDate, endDate) {
   while (current <= end) {
     const dayNumber = current.getDay();
 
-    // Monday through Friday only.
     if (dayNumber >= 1 && dayNumber <= 5) {
-      const date = new Date(current);
-
       dates.push({
-        date: formatDate(date),
+        date: formatDate(current),
         day: DAYS[dayNumber - 1],
       });
     }
@@ -93,61 +93,6 @@ function shuffle(items) {
   return result;
 }
 
-function hasClash(candidate, scheduled) {
-  for (const item of scheduled) {
-    if (
-      normalizeDate(item.lecture_date) !==
-      normalizeDate(candidate.lecture_date)
-    ) {
-      continue;
-    }
-
-    if (
-      !timesOverlap(
-        candidate.start_time,
-        candidate.end_time,
-        item.start_time,
-        item.end_time
-      )
-    ) {
-      continue;
-    }
-
-    if (
-      candidate.lecturer_id != null &&
-      item.lecturer_id != null &&
-      Number(candidate.lecturer_id) === Number(item.lecturer_id)
-    ) {
-      return {
-        clash: true,
-        reason: "Lecturer already has a lecture at this time.",
-      };
-    }
-
-    if (
-      candidate.venue_id != null &&
-      item.venue_id != null &&
-      Number(candidate.venue_id) === Number(item.venue_id)
-    ) {
-      return {
-        clash: true,
-        reason: "Venue is already occupied at this time.",
-      };
-    }
-
-    if (
-      String(candidate.level) === String(item.level)
-    ) {
-      return {
-        clash: true,
-        reason: "Students in this level already have a lecture at this time.",
-      };
-    }
-  }
-
-  return { clash: false, reason: null };
-}
-
 function buildCourseList(rows) {
   const courses = new Map();
 
@@ -166,7 +111,6 @@ function buildCourseList(rows) {
 
     const course = courses.get(row.course_id);
 
-    // Only use lecturers actually assigned to this course.
     if (
       row.lecturer_id != null &&
       !course.lecturers.some(
@@ -184,6 +128,160 @@ function buildCourseList(rows) {
 
   return Array.from(courses.values());
 }
+
+function hasClash(candidate, scheduled) {
+  for (const item of scheduled) {
+    if (
+      normalizeDate(item.lecture_date) !==
+      normalizeDate(candidate.lecture_date)
+    ) {
+      continue;
+    }
+
+    if (
+      !timesOverlap(
+        candidate.start_time,
+        candidate.end_time,
+        String(item.start_time || ""),
+        String(item.end_time || "")
+      )
+    ) {
+      continue;
+    }
+
+    if (
+      candidate.lecturer_id != null &&
+      item.lecturer_id != null &&
+      Number(candidate.lecturer_id) === Number(item.lecturer_id)
+    ) {
+      return "Lecturer clash";
+    }
+
+    if (
+      candidate.venue_id != null &&
+      item.venue_id != null &&
+      Number(candidate.venue_id) === Number(item.venue_id)
+    ) {
+      return "Venue clash";
+    }
+
+    if (String(candidate.level) === String(item.level)) {
+      return "Level/student group clash";
+    }
+  }
+
+  return null;
+}
+
+function generateSchedule(courses, venues, lectureDates, existingRows, semester, academicYear) {
+  const scheduled = [...existingRows];
+  const generated = [];
+  const unscheduled = [];
+
+  const slots = [];
+
+  for (const date of lectureDates) {
+    for (const time of TIME_SLOTS[date.day]) {
+      slots.push({
+        lecture_date: date.date,
+        day: date.day,
+        start_time: time.start,
+        end_time: time.end,
+      });
+    }
+  }
+
+  // Prioritize courses with more units, then higher levels.
+  const orderedCourses = [...courses].sort((a, b) => {
+    const unitDifference =
+      Number(b.course_unit || 1) - Number(a.course_unit || 1);
+
+    if (unitDifference !== 0) return unitDifference;
+
+    return Number(b.level || 0) - Number(a.level || 0);
+  });
+
+  for (const course of orderedCourses) {
+    let placed = false;
+
+    const candidateSlots = shuffle(slots);
+    const lecturers = shuffle(course.lecturers);
+    const candidateVenues = shuffle(venues);
+
+    for (const slot of candidateSlots) {
+      if (placed) break;
+
+      for (const lecturer of lecturers) {
+        if (placed) break;
+
+        for (const venue of candidateVenues) {
+          const candidate = {
+            course_id: course.course_id,
+            course_code: course.course_code,
+            course_title: course.course_title,
+            course_unit: course.course_unit,
+
+            lecturer_id: lecturer.lecturer_id,
+            lecturer_name: lecturer.lecturer_name,
+
+            venue_id: venue.id,
+            venue_name: venue.venue_name,
+            venue_code: venue.venue_code,
+
+            level: course.level,
+            semester,
+            academic_year: academicYear,
+
+            day: slot.day,
+            lecture_date: slot.lecture_date,
+            start_time: slot.start_time,
+            end_time: slot.end_time,
+
+            session: "Lecture",
+          };
+
+          if (hasClash(candidate, scheduled)) continue;
+
+          scheduled.push(candidate);
+          generated.push(candidate);
+          placed = true;
+          break;
+        }
+      }
+    }
+
+    if (!placed) {
+      unscheduled.push({
+        course_id: course.course_id,
+        course_code: course.course_code,
+        course_title: course.course_title,
+        level: course.level,
+        reason:
+          "No available slot, lecturer, and venue combination was found without a clash.",
+      });
+    }
+  }
+
+  generated.sort((a, b) => {
+    const dateComparison =
+      a.lecture_date.localeCompare(b.lecture_date);
+
+    if (dateComparison !== 0) return dateComparison;
+
+    const timeComparison =
+      a.start_time.localeCompare(b.start_time);
+
+    if (timeComparison !== 0) return timeComparison;
+
+    return Number(a.level) - Number(b.level);
+  });
+
+  return { generated, unscheduled };
+}
+
+// =====================================================
+// GENERATE TIMETABLE FOR ALL COURSE LEVELS
+// =====================================================
 
 exports.generateTimetable = (req, res) => {
   const { semester, academic_year, start_date, end_date } = req.body;
@@ -203,31 +301,14 @@ exports.generateTimetable = (req, res) => {
     });
   }
 
-  const datePattern = /^\d{4}-\d{2}-\d{2}$/;
-
-  if (!datePattern.test(start_date) || !datePattern.test(end_date)) {
+  if (!validDate(start_date) || !validDate(end_date)) {
     return res.status(400).json({
       success: false,
-      message: "Dates must use YYYY-MM-DD format.",
+      message: "Please provide valid dates in YYYY-MM-DD format.",
     });
   }
 
-  const start = new Date(`${start_date}T12:00:00`);
-  const end = new Date(`${end_date}T12:00:00`);
-
-  if (
-    Number.isNaN(start.getTime()) ||
-    Number.isNaN(end.getTime()) ||
-    formatDate(start) !== start_date ||
-    formatDate(end) !== end_date
-  ) {
-    return res.status(400).json({
-      success: false,
-      message: "Please provide valid semester dates.",
-    });
-  }
-
-  if (start > end) {
+  if (start_date > end_date) {
     return res.status(400).json({
       success: false,
       message: "Start date cannot be after end date.",
@@ -239,11 +320,11 @@ exports.generateTimetable = (req, res) => {
   if (lectureDates.length === 0) {
     return res.status(400).json({
       success: false,
-      message: "The selected range contains no Monday-Friday dates.",
+      message: "The selected date range contains no weekdays.",
     });
   }
 
-  // null means all course levels, not one selected level.
+  // null means that every course level is included.
   aiTimetableModel.getCoursesWithLecturers(
     semester,
     null,
@@ -263,7 +344,7 @@ exports.generateTimetable = (req, res) => {
         return res.status(400).json({
           success: false,
           message:
-            "No courses were found for this semester. Check the course data.",
+            "No courses were found for this semester. Check your course records.",
         });
       }
 
@@ -275,7 +356,7 @@ exports.generateTimetable = (req, res) => {
         return res.status(409).json({
           success: false,
           message:
-            "Some courses have no assigned lecturer. Assign their actual lecturers before generating the timetable.",
+            "Some courses have no assigned lecturer. Assign the actual lecturers before generating the timetable.",
           courses: withoutLecturers.map((course) => ({
             course_code: course.course_code,
             course_title: course.course_title,
@@ -314,111 +395,30 @@ exports.generateTimetable = (req, res) => {
               });
             }
 
-            const scheduled = [...(existingRows || [])];
-            const generated = [];
+            const { generated, unscheduled } = generateSchedule(
+              courses,
+              venues,
+              lectureDates,
+              existingRows || [],
+              semester,
+              academic_year
+            );
 
-            // Schedule courses with more units first.
-            // Then group higher levels first for consistent ordering.
-            courses.sort((a, b) => {
-              const units =
-                Number(b.course_unit || 1) -
-                Number(a.course_unit || 1);
-
-              if (units !== 0) return units;
-
-              return Number(b.level) - Number(a.level);
-            });
-
-            const slots = [];
-
-            for (const lectureDate of lectureDates) {
-              for (const time of TIME_SLOTS[lectureDate.day]) {
-                slots.push({
-                  lecture_date: lectureDate.date,
-                  day: lectureDate.day,
-                  start_time: time.start,
-                  end_time: time.end,
-                });
-              }
+            if (unscheduled.length > 0) {
+              return res.status(409).json({
+                success: false,
+                message:
+                  `${unscheduled.length} course(s) could not be scheduled. ` +
+                  "Expand the date range, add available venues, or review existing timetable clashes.",
+                summary: {
+                  total_courses: courses.length,
+                  scheduled_courses: generated.length,
+                  unscheduled_courses: unscheduled.length,
+                },
+                data: generated,
+                unscheduled,
+              });
             }
-
-            for (const course of courses) {
-              let placed = false;
-
-              const candidateSlots = shuffle(slots);
-              const lecturers = shuffle(course.lecturers);
-              const candidateVenues = shuffle(venues);
-
-              for (const slot of candidateSlots) {
-                if (placed) break;
-
-                for (const lecturer of lecturers) {
-                  if (placed) break;
-
-                  for (const venue of candidateVenues) {
-                    const candidate = {
-                      course_id: course.course_id,
-                      course_code: course.course_code,
-                      course_title: course.course_title,
-                      course_unit: course.course_unit,
-
-                      lecturer_id: lecturer.lecturer_id,
-                      lecturer_name: lecturer.lecturer_name,
-
-                      venue_id: venue.id,
-                      venue_name: venue.venue_name,
-                      venue_code: venue.venue_code,
-
-                      level: course.level,
-                      semester,
-                      academic_year,
-
-                      day: slot.day,
-                      lecture_date: slot.lecture_date,
-                      start_time: slot.start_time,
-                      end_time: slot.end_time,
-
-                      session: "Lecture",
-                    };
-
-                    const result = hasClash(candidate, scheduled);
-
-                    if (result.clash) continue;
-
-                    scheduled.push(candidate);
-                    generated.push(candidate);
-                    placed = true;
-                    break;
-                  }
-                }
-              }
-
-              if (!placed) {
-                return res.status(409).json({
-                  success: false,
-                  message:
-                    `Unable to schedule ${course.course_code} ` +
-                    `(${course.course_title}) for ${course.level} Level ` +
-                    "without a clash. Expand the date range or review existing timetable records.",
-                  unscheduled_course: course.course_code,
-                  generated_before_failure: generated.length,
-                });
-              }
-            }
-
-            generated.sort((a, b) => {
-              const dateComparison =
-                a.lecture_date.localeCompare(b.lecture_date);
-
-              if (dateComparison !== 0) return dateComparison;
-
-              const timeComparison =
-                a.start_time.localeCompare(b.start_time);
-
-              if (timeComparison !== 0) return timeComparison;
-
-              return Number(a.level) - Number(b.level);
-            });
 
             return res.json({
               success: true,
@@ -446,6 +446,10 @@ exports.generateTimetable = (req, res) => {
     }
   );
 };
+
+// =====================================================
+// SAVE GENERATED TIMETABLE
+// =====================================================
 
 exports.saveGeneratedTimetable = (req, res) => {
   const { timetable } = req.body;
@@ -488,7 +492,6 @@ exports.saveGeneratedTimetable = (req, res) => {
 
   let index = 0;
 
-  // Save sequentially so errors are handled predictably.
   function saveNext() {
     if (index >= timetable.length) {
       return res.json({
@@ -498,23 +501,24 @@ exports.saveGeneratedTimetable = (req, res) => {
       });
     }
 
-    const item = timetable[index];
+    aiTimetableModel.saveGeneratedTimetable(
+      timetable[index],
+      (error) => {
+        if (error) {
+          console.error("Save timetable error:", error);
 
-    aiTimetableModel.saveGeneratedTimetable(item, (error) => {
-      if (error) {
-        console.error("Save timetable error:", error);
+          return res.status(500).json({
+            success: false,
+            message:
+              "Saving failed. Some earlier sessions may already have been saved. Check the timetable before retrying.",
+            saved_before_error: index,
+          });
+        }
 
-        return res.status(500).json({
-          success: false,
-          message:
-            "Saving failed. Some earlier sessions may already have been saved; check the timetable before retrying.",
-          saved_before_error: index,
-        });
+        index++;
+        saveNext();
       }
-
-      index++;
-      saveNext();
-    });
+    );
   }
 
   saveNext();
