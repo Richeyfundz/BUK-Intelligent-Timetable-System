@@ -1,3 +1,4 @@
+
 /* ==========================================
    BUK INTELLIGENT TIMETABLE MANAGEMENT SYSTEM
    Main Stylesheet
@@ -18,14 +19,11 @@
   --shadow-hover: 0 8px 25px rgba(0, 0, 0, 0.12);
   --radius: 14px;
 
-  /* Desktop layout dimensions */
   --sidebar-width: 260px;
   --desktop-content-width: 1100px;
 }
 
-/* ==========================================
-   GLOBAL
-========================================== */
+/* GLOBAL */
 
 * {
   margin: 0;
@@ -60,24 +58,32 @@ textarea {
   font: inherit;
 }
 
-/* ==========================================
-   LOGIN PAGE
-========================================== */
+/* LOGIN PAGE */
 
 .login-wrapper {
+  width: 100%;
+  min-width: 0;
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   justify-content: center;
   align-items: center;
   padding: 30px 20px;
+  overflow-x: hidden;
   background:
-    linear-gradient(135deg, rgba(0, 86, 166, 0.08), rgba(244, 180, 0, 0.05)),
+    linear-gradient(
+      135deg,
+      rgba(0, 86, 166, 0.08),
+      rgba(244, 180, 0, 0.05)
+    ),
     var(--background);
 }
 
 .login-card {
   width: 100%;
   max-width: 430px;
+  flex-shrink: 0;
+  margin: auto;
   background: var(--white);
   border-radius: 20px;
   padding: 40px;
@@ -125,9 +131,7 @@ textarea {
   box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.12);
 }
 
-/* ==========================================
-   BUTTONS
-========================================== */
+/* BUTTONS */
 
 .btn-primary {
   background: var(--primary);
@@ -162,18 +166,14 @@ textarea {
   color: #000;
 }
 
-/* ==========================================
-   MAIN WRAPPER
-========================================== */
+/* MAIN WRAPPER */
 
 .wrapper {
   display: flex;
   min-height: 100vh;
 }
 
-/* ==========================================
-   SIDEBAR
-========================================== */
+/* SIDEBAR */
 
 .sidebar {
   width: var(--sidebar-width);
@@ -203,9 +203,7 @@ textarea {
   background: transparent;
 }
 
-/* ==========================================
-   SIDEBAR HEADER
-========================================== */
+/* SIDEBAR HEADER */
 
 .sidebar-header {
   padding: 24px 20px;
@@ -227,9 +225,7 @@ textarea {
   color: var(--white);
 }
 
-/* ==========================================
-   SIDEBAR MENU
-========================================== */
+/* SIDEBAR MENU */
 
 .sidebar-menu {
   list-style: none;
@@ -266,7 +262,7 @@ textarea {
   min-width: 20px;
 }
 
-/* Active menu */
+/* ACTIVE MENU */
 
 .sidebar-menu .active a {
   background: var(--gold);
@@ -281,9 +277,7 @@ textarea {
   transform: translateX(0);
 }
 
-/* ==========================================
-   MAIN CONTENT
-========================================== */
+/* MAIN CONTENT */
 
 .main-content {
   margin-left: var(--sidebar-width);
@@ -293,9 +287,7 @@ textarea {
   background: var(--background);
 }
 
-/* ==========================================
-   TOPBAR
-========================================== */
+/* TOPBAR */
 
 .topbar {
   background: var(--white);
@@ -320,9 +312,7 @@ textarea {
   font-weight: 700;
 }
 
-/* ==========================================
-   PAGE CONTENT
-========================================== */
+/* PAGE CONTENT */
 
 .main-content > .container,
 .main-content > .container-fluid {
@@ -330,9 +320,7 @@ textarea {
   padding-bottom: 30px;
 }
 
-/* ==========================================
-   DASHBOARD CARDS
-========================================== */
+/* DASHBOARD CARDS */
 
 .dashboard-card {
   background: var(--white);
@@ -366,9 +354,7 @@ textarea {
   color: var(--primary);
 }
 
-/* ==========================================
-   GENERAL CARDS
-========================================== */
+/* GENERAL CARDS */
 
 .card {
   border: 1px solid var(--border);
@@ -389,9 +375,7 @@ textarea {
   padding: 20px;
 }
 
-/* ==========================================
-   TABLES
-========================================== */
+/* TABLES */
 
 .table {
   background: var(--white);
@@ -427,9 +411,7 @@ textarea {
   -webkit-overflow-scrolling: touch;
 }
 
-/* ==========================================
-   FORMS
-========================================== */
+/* FORMS */
 
 .form-control,
 .form-select {
@@ -445,9 +427,7 @@ textarea {
   box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.12);
 }
 
-/* ==========================================
-   BADGES
-========================================== */
+/* BADGES */
 
 .badge {
   border-radius: 20px;
@@ -455,18 +435,14 @@ textarea {
   font-weight: 600;
 }
 
-/* ==========================================
-   ALERTS
-========================================== */
+/* ALERTS */
 
 .alert {
   border-radius: 10px;
   border: none;
 }
 
-/* ==========================================
-   MODALS
-========================================== */
+/* MODALS */
 
 .modal-content {
   border: none;
@@ -488,9 +464,7 @@ textarea {
   border-top: 1px solid var(--border);
 }
 
-/* ==========================================
-   DROPDOWNS
-========================================== */
+/* DROPDOWNS */
 
 .dropdown-menu {
   border: 1px solid var(--border);
@@ -509,9 +483,7 @@ textarea {
   color: var(--primary);
 }
 
-/* ==========================================
-   PAGINATION
-========================================== */
+/* PAGINATION */
 
 .page-link {
   color: var(--primary);
@@ -523,9 +495,7 @@ textarea {
   border-color: var(--primary);
 }
 
-/* ==========================================
-   FOOTER
-========================================== */
+/* FOOTER */
 
 footer {
   background: var(--white);
@@ -534,25 +504,15 @@ footer {
   color: var(--muted);
 }
 
-/* ==========================================
-   LINKS
-========================================== */
+/* LINKS */
 
 a {
   transition: 0.2s ease;
 }
 
-/* ==========================================
-   TABLET AND PHONE
-   Preserve desktop sidebar and page layout
-========================================== */
+/* TABLET */
 
 @media (max-width: 992px) {
-  /*
-    Keep the sidebar fixed at desktop width.
-    Main content remains beside the sidebar.
-  */
-
   .sidebar {
     width: var(--sidebar-width);
     min-width: var(--sidebar-width);
@@ -572,20 +532,18 @@ a {
   }
 }
 
-/* ==========================================
-   PHONE DESKTOP-STYLE VIEW
-========================================== */
+/* PHONE DESKTOP-STYLE VIEW */
 
 @media (max-width: 768px) {
   html {
-    min-width: 1024px;
-    overflow-x: auto;
+    min-width: 0;
+    overflow-x: hidden;
     -webkit-text-size-adjust: 100%;
   }
 
   body {
-    min-width: 1024px;
-    overflow-x: auto;
+    min-width: 0;
+    overflow-x: hidden;
   }
 
   .wrapper {
@@ -652,20 +610,24 @@ a {
     -webkit-overflow-scrolling: touch;
   }
 
+  /* Keep login independent of the desktop page width. */
   .login-wrapper {
+    width: 100%;
     min-width: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
     padding: 20px 15px;
   }
 
   .login-card {
-    padding: 28px 22px;
+    width: 100%;
+    max-width: 430px;
+    padding: 24px 20px;
     border-radius: 16px;
   }
 }
 
-/* ==========================================
-   SMALL PHONES
-========================================== */
+/* SMALL PHONES */
 
 @media (max-width: 480px) {
   .sidebar-header {
@@ -682,6 +644,10 @@ a {
 
   .topbar {
     padding: 16px 28px;
+  }
+
+  .login-wrapper {
+    padding: 20px 15px;
   }
 
   .login-card {
