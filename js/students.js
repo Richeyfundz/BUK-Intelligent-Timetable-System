@@ -109,7 +109,7 @@ async function loadDepartmentDropdown() {
       dropdown.innerHTML =
         '<option value="">No departments found</option>';
 
-      console.error("No department records found:", result);
+      console.error("No departments returned by API:", result);
       return;
     }
 
@@ -122,7 +122,7 @@ async function loadDepartmentDropdown() {
         department.department;
 
       if (id === undefined || id === null || !name) {
-        console.warn("Skipping invalid department record:", department);
+        console.warn("Invalid department record:", department);
         return;
       }
 
@@ -165,7 +165,9 @@ async function saveStudent(event) {
     !genderInput ||
     !levelInput
   ) {
-    alert("A required student form field is missing. Check students.html.");
+    alert(
+      "A required field is missing. Check the form IDs in pages/students.html."
+    );
     return;
   }
 
@@ -185,16 +187,16 @@ async function saveStudent(event) {
   const lastName = nameParts.join(" ");
 
   if (!firstName || !lastName) {
-    alert("Enter the student's first name and surname.");
+    alert("Enter both the student's first name and surname.");
     return;
   }
 
-  // Field names must match the backend student controller.
+  // These field names match backend/controllers/studentController.js.
   const studentData = {
-    matric_number: matricNumber,
+    department_id: Number(departmentId),
+    matric_no: matricNumber,
     first_name: firstName,
     last_name: lastName,
-    department_id: Number(departmentId),
     gender: gender,
     level: level,
   };
@@ -230,7 +232,6 @@ async function saveStudent(event) {
     );
 
     editingStudentId = null;
-
     document.getElementById("studentForm").reset();
     setSaveButtonText("Save Student");
 
@@ -285,6 +286,7 @@ async function loadStudents() {
         `${student.first_name || ""} ${student.last_name || ""}`.trim();
 
       const matricNumber =
+        student.matric_no ||
         student.matric_number ||
         student.registration_number ||
         student.regNumber ||
@@ -298,16 +300,13 @@ async function loadStudents() {
 
       const row = document.createElement("tr");
 
-      [
-        matricNumber,
-        fullName,
-        departmentName,
-        studentLevel,
-      ].forEach(function (value) {
-        const cell = document.createElement("td");
-        cell.textContent = value;
-        row.appendChild(cell);
-      });
+      [matricNumber, fullName, departmentName, studentLevel].forEach(
+        function (value) {
+          const cell = document.createElement("td");
+          cell.textContent = value;
+          row.appendChild(cell);
+        }
+      );
 
       const actions = document.createElement("td");
 
@@ -369,6 +368,7 @@ async function editStudent(id) {
     editingStudentId = student.id || id;
 
     document.getElementById("regNumber").value =
+      student.matric_no ||
       student.matric_number ||
       student.registration_number ||
       student.regNumber ||
@@ -381,7 +381,6 @@ async function editStudent(id) {
 
     const departmentDropdown = document.getElementById("department");
 
-    // Load dropdown options before selecting the student's department.
     if (departmentDropdown.options.length <= 1) {
       await loadDepartmentDropdown();
     }
