@@ -1,4 +1,4 @@
-javascript;
+
 // =============================================
 // BUK Intelligent Timetable Management System
 // Lecturers Module - Railway MySQL API Version
