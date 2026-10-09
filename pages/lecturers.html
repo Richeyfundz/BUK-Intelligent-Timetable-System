@@ -1,167 +1,305 @@
-```html
+
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
 
-    <title>Lecturers | BUK Intelligent Timetable Management System</title>
+  <title>Lecturers | BUK-ITMS</title>
 
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="../css/style.css" />
-  </head>
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet">
 
-  <body>
-    <div class="wrapper">
-      <aside class="sidebar">
-        <div class="sidebar-header text-center">
-          <img src="../buk-logo.png.JPG" class="sidebar-logo" alt="BUK Logo" />
-          <h4 class="mt-3">BUK ITMS</h4>
-          <small>Intelligent Timetable System</small>
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+    rel="stylesheet">
+
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body>
+  <div class="wrapper">
+    <aside class="sidebar">
+      <div class="sidebar-header text-center p-3">
+        <img
+          src="../images/buk-logo.png"
+          alt="BUK Logo"
+          width="65"
+          onerror="this.style.display='none'">
+
+        <h5 class="mt-2">BUK-ITMS</h5>
+        <small>Timetable Management</small>
+      </div>
+
+      <nav class="sidebar-menu p-3">
+        <a class="nav-link" href="dashboard.html">
+          <i class="bi bi-speedometer2"></i>
+          Dashboard
+        </a>
+
+        <a class="nav-link" href="faculty.html">
+          <i class="bi bi-building"></i>
+          Faculties
+        </a>
+
+        <a class="nav-link" href="departments.html">
+          <i class="bi bi-diagram-3"></i>
+          Departments
+        </a>
+
+        <a class="nav-link" href="courses.html">
+          <i class="bi bi-book"></i>
+          Courses
+        </a>
+
+        <a class="nav-link active" href="lecturers.html">
+          <i class="bi bi-person-workspace"></i>
+          Lecturers
+        </a>
+
+        <a class="nav-link" href="students.html">
+          <i class="bi bi-people"></i>
+          Students
+        </a>
+
+        <a class="nav-link" href="venues.html">
+          <i class="bi bi-geo-alt"></i>
+          Venues
+        </a>
+
+        <a class="nav-link" href="lecture-timetable.html">
+          <i class="bi bi-calendar-week"></i>
+          AI Timetable
+        </a>
+
+        <a class="nav-link" href="exam-timetable.html">
+          <i class="bi bi-calendar-check"></i>
+          Exam Timetable
+        </a>
+
+        <a class="nav-link" href="reports.html">
+          <i class="bi bi-file-earmark-bar-graph"></i>
+          Reports
+        </a>
+
+        <a class="nav-link" href="settings.html">
+          <i class="bi bi-gear"></i>
+          Settings
+        </a>
+
+        <hr>
+
+        <button
+          type="button"
+          class="btn btn-outline-danger w-100"
+          id="logoutBtn">
+          <i class="bi bi-box-arrow-right"></i>
+          Logout
+        </button>
+      </nav>
+    </aside>
+
+    <main class="main-content p-4">
+      <header class="mb-4">
+        <h2>Lecturer Management</h2>
+        <p class="text-muted">
+          Manage lecturers and assign their courses.
+        </p>
+      </header>
+
+      <div id="messageBox"></div>
+
+      <section class="card shadow-sm mb-4">
+        <div class="card-header">
+          <h5 class="mb-0" id="formTitle">
+            Add Lecturer
+          </h5>
         </div>
 
-        <ul class="sidebar-menu">
-          <li><a href="dashboard.html"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
-          <li><a href="departments.html"><i class="bi bi-building"></i> Departments</a></li>
-          <li><a href="courses.html"><i class="bi bi-book"></i> Courses</a></li>
-          <li class="active"><a href="lecturers.html"><i class="bi bi-person-workspace"></i> Lecturers</a></li>
-          <li><a href="students.html"><i class="bi bi-mortarboard"></i> Students</a></li>
-          <li><a href="venues.html"><i class="bi bi-bank"></i> Venues</a></li>
-          <li><a href="ai-timetable.html"><i class="bi bi-cpu"></i> AI Timetable</a></li>
-          <li><a href="exam-timetable.html"><i class="bi bi-calendar-check"></i> Exam Timetable</a></li>
-          <li><a href="reports.html"><i class="bi bi-bar-chart"></i> Reports</a></li>
-          <li><a href="settings.html"><i class="bi bi-gear"></i> Settings</a></li>
-          <li><a href="about-system.html"><i class="bi bi-info-circle"></i> About System</a></li>
-          <li><a href="about-developer.html"><i class="bi bi-person-badge"></i> About Developer</a></li>
-          <li><a href="../index.html" id="logoutBtn"><i class="bi bi-box-arrow-left"></i> Logout</a></li>
-        </ul>
-      </aside>
+        <div class="card-body">
+          <form id="lecturerForm">
+            <input type="hidden" id="lecturerId">
 
-      <main class="main-content">
-        <nav class="topbar">
-          <div>
-            <h3>Lecturer Management</h3>
-            <small>Manage University Lecturers</small>
-          </div>
-          <span id="currentDate"></span>
-        </nav>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label for="staff_id" class="form-label">
+                  Staff ID
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="staff_id"
+                  required>
+              </div>
 
-        <div class="container-fluid mt-4">
-          <div class="card shadow border-0">
-            <div class="card-header bg-primary text-white">
-              <h5 class="mb-0">
-                <i class="bi bi-plus-circle"></i> Add New Lecturer
-              </h5>
-            </div>
+              <div class="col-md-6">
+                <label for="department_id"
+                       class="form-label">
+                  Department
+                </label>
+                <select
+                  class="form-select"
+                  id="department_id"
+                  required>
+                  <option value="">
+                    Select department
+                  </option>
+                </select>
+              </div>
 
-            <div class="card-body">
-              <form id="lecturerForm">
-                <div class="row">
-                  <div class="col-md-4 mb-3">
-                    <label for="staffId" class="form-label">Staff ID</label>
-                    <input
-                      type="text"
-                      id="staffId"
-                      class="form-control"
-                      required
-                    />
-                  </div>
+              <div class="col-md-6">
+                <label for="first_name" class="form-label">
+                  First Name
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="first_name"
+                  required>
+              </div>
 
-                  <div class="col-md-4 mb-3">
-                    <label for="firstName" class="form-label">First Name</label>
-                    <input
-                      type="text"
-                      id="firstName"
-                      class="form-control"
-                      required
-                    />
-                  </div>
+              <div class="col-md-6">
+                <label for="last_name" class="form-label">
+                  Last Name
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="last_name"
+                  required>
+              </div>
 
-                  <div class="col-md-4 mb-3">
-                    <label for="lastName" class="form-label">Last Name</label>
-                    <input
-                      type="text"
-                      id="lastName"
-                      class="form-control"
-                      required
-                    />
-                  </div>
+              <div class="col-md-6">
+                <label for="email" class="form-label">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  class="form-control"
+                  id="email"
+                  required>
+              </div>
 
-                  <div class="col-md-6 mb-3">
-                    <label for="lecturerEmail" class="form-label">Email</label>
-                    <input
-                      type="email"
-                      id="lecturerEmail"
-                      class="form-control"
-                      required
-                    />
-                  </div>
+              <div class="col-md-6">
+                <label for="phone" class="form-label">
+                  Phone
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="phone">
+              </div>
 
-                  <div class="col-md-6 mb-3">
-                    <label for="department" class="form-label">Department</label>
-                    <select id="department" class="form-select" required>
-                      <option value="">Loading departments...</option>
-                    </select>
-                  </div>
+              <div class="col-md-6">
+                <label for="academic_rank"
+                       class="form-label">
+                  Academic Rank
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="academic_rank">
+              </div>
+
+              <div class="col-md-6">
+                <label for="specialization"
+                       class="form-label">
+                  Specialization
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="specialization">
+              </div>
+
+              <div class="col-12">
+                <label for="course_ids" class="form-label">
+                  Assign Courses
+                </label>
+
+                <select
+                  class="form-select"
+                  id="course_ids"
+                  multiple
+                  size="6">
+                </select>
+
+                <div class="form-text">
+                  Select multiple courses if needed.
+                  On a computer, hold Ctrl while selecting.
+                  On a phone, tap the courses you need.
                 </div>
-
-                <div class="row">
-                  <div class="col-md-3 mb-3">
-                    <button type="submit" class="btn btn-primary w-100">
-                      <i class="bi bi-save"></i> Save Lecturer
-                    </button>
-                  </div>
-
-                  <div class="col-md-3 mb-3">
-                    <button type="reset" class="btn btn-secondary w-100">
-                      Reset
-                    </button>
-                  </div>
-                </div>
-              </form>
-            </div>
-          </div>
-
-          <div class="card shadow border-0 mt-4">
-            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center gap-3">
-              <h5 class="mb-0">Lecturer List</h5>
-              <input
-                type="text"
-                id="searchLecturer"
-                class="form-control w-25"
-                placeholder="Search Lecturer"
-                aria-label="Search lecturers"
-              />
-            </div>
-
-            <div class="card-body">
-              <div class="table-responsive">
-                <table class="table table-hover">
-                  <thead class="table-primary">
-                    <tr>
-                      <th>Staff ID</th>
-                      <th>Name</th>
-                      <th>Department</th>
-                      <th width="170">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody id="lecturerTable"></tbody>
-                </table>
               </div>
             </div>
+
+            <div class="mt-4 d-flex flex-wrap gap-2">
+              <button
+                type="submit"
+                class="btn btn-primary"
+                id="saveBtn">
+                <i class="bi bi-save"></i>
+                Save Lecturer
+              </button>
+
+              <button
+                type="button"
+                class="btn btn-secondary"
+                id="resetBtn">
+                Clear Form
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <section class="card shadow-sm">
+        <div class="card-header">
+          <h5 class="mb-0">Lecturer Records</h5>
+        </div>
+
+        <div class="card-body">
+          <input
+            type="search"
+            id="searchInput"
+            class="form-control mb-3"
+            placeholder="Search lecturers...">
+
+          <div class="table-responsive">
+            <table class="table table-striped
+                          table-hover align-middle">
+              <thead>
+                <tr>
+                  <th>Staff ID</th>
+                  <th>Name</th>
+                  <th>Department</th>
+                  <th>Assigned Courses</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+
+              <tbody id="lecturerTableBody">
+                <tr>
+                  <td colspan="5" class="text-center">
+                    Loading lecturers...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
-      </main>
-    </div>
+      </section>
+    </main>
+  </div>
 
-    <script src="../js/lecturers.js"></script>
-  </body>
+  <script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
+  </script>
+
+  <script src="../js/lecturers.js"></script>
+</body>
 </html>
-```
+
+
+  
