@@ -1,4 +1,3 @@
-
 const Lecturer = require("../models/lecturerModel");
 const db = require("../config/database");
 
@@ -7,13 +6,17 @@ exports.getAllLecturers = (req, res) => {
   Lecturer.getAll((err, results) => {
     if (err) {
       console.error("Get Lecturers Error:", err);
+
       return res.status(500).json({
         success: false,
         message: "Failed to fetch lecturers",
       });
     }
 
-    res.json({ success: true, data: results });
+    res.json({
+      success: true,
+      data: results,
+    });
   });
 };
 
@@ -22,6 +25,7 @@ exports.getLecturerById = (req, res) => {
   Lecturer.getById(req.params.id, (err, results) => {
     if (err) {
       console.error("Get Lecturer Error:", err);
+
       return res.status(500).json({
         success: false,
         message: "Failed to fetch lecturer",
@@ -35,7 +39,10 @@ exports.getLecturerById = (req, res) => {
       });
     }
 
-    res.json({ success: true, data: results[0] });
+    res.json({
+      success: true,
+      data: results[0],
+    });
   });
 };
 
@@ -47,62 +54,66 @@ exports.createLecturer = (req, res) => {
     first_name,
     last_name,
     email,
-    phone,
-    academic_rank,
-    specialization,
   } = req.body;
 
   if (
     !department_id ||
-    !staff_id ||
-    !first_name ||
-    !last_name ||
-    !email
+    !String(staff_id || "").trim() ||
+    !String(first_name || "").trim() ||
+    !String(last_name || "").trim() ||
+    !String(email || "").trim()
   ) {
     return res.status(400).json({
       success: false,
-      message: "Department, staff ID, names and email are required",
+      message: "Complete all required lecturer fields",
     });
   }
 
-  Lecturer.create(
-    {
-      department_id,
-      staff_id,
-      first_name,
-      last_name,
-      email,
-      phone,
-      academic_rank,
-      specialization,
-    },
-    (err, result) => {
-      if (err) {
-        console.error("Create Lecturer Error:", err);
+  const lecturer = {
+    department_id: Number(department_id),
+    staff_id: String(staff_id).trim(),
+    first_name: String(first_name).trim(),
+    last_name: String(last_name).trim(),
+    email: String(email).trim(),
+  };
 
-        const duplicate = err.code === "ER_DUP_ENTRY";
-        const invalidDepartment =
-          err.code === "ER_NO_REFERENCED_ROW_2";
+  if (!Number.isInteger(lecturer.department_id)) {
+    return res.status(400).json({
+      success: false,
+      message: "Select a valid department",
+    });
+  }
 
-        return res.status(
-          duplicate || invalidDepartment ? 409 : 500
-        ).json({
+  Lecturer.create(lecturer, (err, result) => {
+    if (err) {
+      console.error("Create Lecturer Error:", err);
+
+      if (err.code === "ER_DUP_ENTRY") {
+        return res.status(409).json({
           success: false,
-          message: duplicate
-            ? "Staff ID or email already exists"
-            : invalidDepartment
-              ? "Selected department does not exist"
-              : "Failed to create lecturer",
+          message: "Staff ID or email already exists",
         });
       }
 
-      res.status(201).json({
-        success: true,
-        message: "Lecturer added successfully",
-        lecturerId: result.insertId,
+      if (err.code === "ER_NO_REFERENCED_ROW_2") {
+        return res.status(409).json({
+          success: false,
+          message: "Selected department does not exist",
+        });
+      }
+
+      return res.status(500).json({
+        success: false,
+        message: "Failed to create lecturer",
       });
     }
-  );
+
+    res.status(201).json({
+      success: true,
+      message: "Lecturer added successfully",
+      lecturerId: result.insertId,
+    });
+  });
 };
 
 // UPDATE LECTURER
@@ -113,39 +124,53 @@ exports.updateLecturer = (req, res) => {
     first_name,
     last_name,
     email,
-    phone,
-    academic_rank,
-    specialization,
   } = req.body;
 
   if (
     !department_id ||
-    !staff_id ||
-    !first_name ||
-    !last_name ||
-    !email
+    !String(staff_id || "").trim() ||
+    !String(first_name || "").trim() ||
+    !String(last_name || "").trim() ||
+    !String(email || "").trim()
   ) {
     return res.status(400).json({
       success: false,
-      message: "Department, staff ID, names and email are required",
+      message: "Complete all required lecturer fields",
+    });
+  }
+
+  const lecturer = {
+    department_id: Number(department_id),
+    staff_id: String(staff_id).trim(),
+    first_name: String(first_name).trim(),
+    last_name: String(last_name).trim(),
+    email: String(email).trim(),
+  };
+
+  if (
+    !Number.isInteger(lecturer.department_id) ||
+    lecturer.department_id < 1
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "Select a valid department",
     });
   }
 
   Lecturer.update(
     req.params.id,
-    {
-      department_id,
-      staff_id,
-      first_name,
-      last_name,
-      email,
-      phone,
-      academic_rank,
-      specialization,
-    },
+    lecturer,
     (err, result) => {
       if (err) {
         console.error("Update Lecturer Error:", err);
+
+        if (err.code === "ER_DUP_ENTRY") {
+          return res.status(409).json({
+            success: false,
+            message: "Staff ID or email already exists",
+          });
+        }
+
         return res.status(500).json({
           success: false,
           message: "Failed to update lecturer",
@@ -172,6 +197,7 @@ exports.deleteLecturer = (req, res) => {
   Lecturer.delete(req.params.id, (err, result) => {
     if (err) {
       console.error("Delete Lecturer Error:", err);
+
       return res.status(500).json({
         success: false,
         message: "Failed to delete lecturer",
@@ -195,23 +221,32 @@ exports.deleteLecturer = (req, res) => {
 // GET COURSES FOR DROPDOWN
 exports.getCourses = (req, res) => {
   const sql = `
-    SELECT id, course_code, course_title,
-           level, semester
+    SELECT
+      id,
+      course_code,
+      course_title,
+      level,
+      semester
     FROM courses
-    ORDER BY CAST(level AS UNSIGNED),
-             course_code
+    ORDER BY
+      CAST(level AS UNSIGNED),
+      course_code
   `;
 
   db.query(sql, (err, results) => {
     if (err) {
       console.error("Load Courses Error:", err);
+
       return res.status(500).json({
         success: false,
         message: "Failed to load courses",
       });
     }
 
-    res.json({ success: true, data: results });
+    res.json({
+      success: true,
+      data: results,
+    });
   });
 };
 
@@ -222,6 +257,7 @@ exports.getAssignedCourses = (req, res) => {
     (err, results) => {
       if (err) {
         console.error("Assigned Courses Error:", err);
+
         return res.status(500).json({
           success: false,
           message: "Failed to load assignments",
@@ -245,11 +281,11 @@ exports.assignCourses = (req, res) => {
     !Number.isInteger(lecturerId) ||
     lecturerId < 1 ||
     !Array.isArray(courseIds) ||
-    courseIds.some(
-      (id) =>
-        !Number.isInteger(Number(id)) ||
-        Number(id) < 1
-    )
+    courseIds.some((id) => {
+      const number = Number(id);
+
+      return !Number.isInteger(number) || number < 1;
+    })
   ) {
     return res.status(400).json({
       success: false,
@@ -263,6 +299,7 @@ exports.assignCourses = (req, res) => {
     (err) => {
       if (err) {
         console.error("Assign Courses Error:", err);
+
         return res.status(500).json({
           success: false,
           message: "Failed to save course assignments",
