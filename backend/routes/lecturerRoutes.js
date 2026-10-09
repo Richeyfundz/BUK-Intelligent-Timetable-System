@@ -1,21 +1,26 @@
+
 const express = require("express");
 const router = express.Router();
 
-const lecturerController = require("../controllers/lecturerController");
+const lecturerController =
+  require("../controllers/lecturerController");
 
-// Get all lecturers
+// Lecturer records
 router.get("/", lecturerController.getAllLecturers);
-
-// Get lecturer by ID
 router.get("/:id", lecturerController.getLecturerById);
-
-// Create lecturer
 router.post("/", lecturerController.createLecturer);
-
-// Update lecturer
 router.put("/:id", lecturerController.updateLecturer);
-
-// Delete lecturer
 router.delete("/:id", lecturerController.deleteLecturer);
+
+// Course assignments
+router.get("/courses", lecturerController.getCourses);
+router.get(
+  "/:id/courses",
+  lecturerController.getAssignedCourses
+);
+router.put(
+  "/:id/courses",
+  lecturerController.assignCourses
+);
 
 module.exports = router;
