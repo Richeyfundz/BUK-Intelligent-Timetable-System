@@ -114,6 +114,60 @@ exports.update = (id, lecturer, callback) => {
     lecturer.specialization,
     id,
   ];
+  
+/* GET COURSES ASSIGNED TO A LECTURER */
+exports.getAssignedCourses = (lecturerId, callback) => {
+  const sql = `
+    SELECT course_id
+    FROM course_lecturers
+    WHERE lecturer_id = ?
+  `;
+  db.query(sql, [lecturerId], callback);
+};
+
+/* REPLACE A LECTURER'S COURSE ASSIGNMENTS */
+exports.assignCourses = (lecturerId, courseIds, callback) => {
+  db.beginTransaction((err) => {
+    if (err) return callback(err);
+
+    db.query(
+      "DELETE FROM course_lecturers WHERE lecturer_id = ?",
+      [lecturerId],
+      (deleteErr) => {
+        if (deleteErr) {
+          return db.rollback(() => callback(deleteErr));
+        }
+
+        if (courseIds.length === 0) {
+          return db.commit((commitErr) =>
+            callback(commitErr, { success: !commitErr })
+          );
+        }
+
+        const values = courseIds.map((courseId) => [
+          Number(courseId),
+          Number(lecturerId),
+        ]);
+
+        db.query(
+          `INSERT INTO course_lecturers (course_id, lecturer_id)
+           VALUES ?`,
+          [values],
+          (insertErr) => {
+            if (insertErr) {
+              return db.rollback(() => callback(insertErr));
+            }
+
+            db.commit((commitErr) =>
+              callback(commitErr, { success: !commitErr })
+            );
+          }
+        );
+      }
+    );
+  });
+};
+
 
   db.query(sql, values, callback);
 };
