@@ -1,8 +1,7 @@
-
 /* ==========================================
    BUK INTELLIGENT TIMETABLE MANAGEMENT SYSTEM
    Main Stylesheet
-   Desktop Layout Preserved on Phone Browsers
+   Horizontal Overflow Fixed
 ========================================== */
 
 :root {
@@ -18,7 +17,6 @@
   --shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
   --shadow-hover: 0 8px 25px rgba(0, 0, 0, 0.12);
   --radius: 14px;
-
   --sidebar-width: 260px;
   --desktop-content-width: 1100px;
 }
@@ -47,7 +45,9 @@ body {
   color: var(--white);
 }
 
-img {
+img,
+video,
+iframe {
   max-width: 100%;
 }
 
@@ -56,6 +56,7 @@ input,
 select,
 textarea {
   font: inherit;
+  max-width: 100%;
 }
 
 /* LOGIN PAGE */
@@ -82,6 +83,7 @@ textarea {
 .login-card {
   width: 100%;
   max-width: 430px;
+  min-width: 0;
   flex-shrink: 0;
   margin: auto;
   background: var(--white);
@@ -171,6 +173,7 @@ textarea {
 .wrapper {
   display: flex;
   min-height: 100vh;
+  min-width: 0;
 }
 
 /* SIDEBAR */
@@ -179,7 +182,11 @@ textarea {
   width: var(--sidebar-width);
   min-width: var(--sidebar-width);
   height: 100vh;
-  background: linear-gradient(180deg, var(--primary), var(--primary-dark));
+  background: linear-gradient(
+    180deg,
+    var(--primary),
+    var(--primary-dark)
+  );
   color: var(--white);
   position: fixed;
   left: 0;
@@ -318,6 +325,7 @@ textarea {
 .main-content > .container-fluid {
   padding-top: 25px;
   padding-bottom: 30px;
+  min-width: 0;
 }
 
 /* DASHBOARD CARDS */
@@ -361,6 +369,7 @@ textarea {
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   overflow: hidden;
+  min-width: 0;
 }
 
 .card-header {
@@ -373,6 +382,7 @@ textarea {
 
 .card-body {
   padding: 20px;
+  min-width: 0;
 }
 
 /* TABLES */
@@ -406,7 +416,9 @@ textarea {
 }
 
 .table-responsive {
+  display: block;
   width: 100%;
+  max-width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -415,6 +427,8 @@ textarea {
 
 .form-control,
 .form-select {
+  width: 100%;
+  max-width: 100%;
   border: 1px solid var(--border);
   border-radius: 9px;
   padding: 10px 12px;
@@ -521,6 +535,7 @@ a {
   .main-content {
     margin-left: var(--sidebar-width);
     width: calc(100% - var(--sidebar-width));
+    min-width: 0;
   }
 
   .topbar {
@@ -532,23 +547,29 @@ a {
   }
 }
 
-/* PHONE DESKTOP-STYLE VIEW */
+/* PHONE: PREVENT PAGE OVERFLOW */
 
 @media (max-width: 768px) {
   html {
+    width: 100%;
     min-width: 0;
+    max-width: 100%;
     overflow-x: hidden;
     -webkit-text-size-adjust: 100%;
   }
 
   body {
+    width: 100%;
     min-width: 0;
+    max-width: 100%;
     overflow-x: hidden;
   }
 
   .wrapper {
     display: flex;
-    min-width: 1024px;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
   }
 
   .sidebar {
@@ -557,11 +578,10 @@ a {
     top: 0;
     width: var(--sidebar-width);
     min-width: var(--sidebar-width);
+    max-width: 85vw;
     height: 100vh;
-    min-height: 100vh;
     overflow-y: auto;
     overflow-x: hidden;
-    box-shadow: 4px 0 18px rgba(0, 0, 0, 0.08);
   }
 
   .sidebar-header {
@@ -582,38 +602,48 @@ a {
 
   .main-content {
     margin-left: var(--sidebar-width);
-    width: var(--desktop-content-width);
-    min-width: var(--desktop-content-width);
+    width: calc(100% - var(--sidebar-width));
+    min-width: 0;
+    max-width: calc(100% - var(--sidebar-width));
   }
 
   .topbar {
-    padding: 16px 28px;
-    min-height: 72px;
+    width: 100%;
+    max-width: 100%;
+    padding: 16px 12px;
+    flex-wrap: wrap;
   }
 
   .main-content > .container,
   .main-content > .container-fluid {
-    padding: 25px 20px 30px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    padding: 20px 12px 30px;
   }
 
-  .dashboard-card .card-body {
-    padding: 22px;
+  .row {
+    --bs-gutter-x: 1rem;
   }
 
-  .card-body {
-    padding: 20px;
+  .card,
+  .card-body,
+  .dashboard-card {
+    min-width: 0;
+    max-width: 100%;
   }
 
   .table-responsive {
     width: 100%;
+    max-width: 100%;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Keep login independent of the desktop page width. */
   .login-wrapper {
     width: 100%;
     min-width: 0;
+    max-width: 100%;
     min-height: 100vh;
     min-height: 100dvh;
     padding: 20px 15px;
@@ -622,8 +652,21 @@ a {
   .login-card {
     width: 100%;
     max-width: 430px;
+    min-width: 0;
     padding: 24px 20px;
     border-radius: 16px;
+  }
+
+  img,
+  video,
+  iframe {
+    max-width: 100%;
+  }
+
+  input,
+  select,
+  textarea {
+    max-width: 100%;
   }
 }
 
@@ -643,11 +686,11 @@ a {
   }
 
   .topbar {
-    padding: 16px 28px;
+    padding: 14px 12px;
   }
 
   .login-wrapper {
-    padding: 20px 15px;
+    padding: 20px 12px;
   }
 
   .login-card {
@@ -659,12 +702,10 @@ a {
   }
 
   .card-body {
-    padding: 20px;
+    padding: 15px;
   }
 
   .btn {
     border-radius: 8px;
   }
 }
-Just fix the horizontal line on this first so it will screw first
-
