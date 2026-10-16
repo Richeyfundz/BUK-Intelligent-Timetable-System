@@ -1,248 +1,345 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-    <title>About Developer | BUK Intelligent Timetable Management System</title>
-
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
-
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
-      rel="stylesheet"
-    />
-
-    <link rel="stylesheet" href="../css/style.css" />
-  </head>
-
-  <body>
-    <div class="wrapper">
-      <aside class="sidebar">
-        <div class="sidebar-header text-center">
-          <img src="../buk-logo.png.JPG" class="sidebar-logo" />
-
-          <h4 class="mt-3">BUK ITMS</h4>
-
-          <small> Intelligent Timetable System </small>
-        </div>
-
-        <ul class="sidebar-menu">
-          <li>
-            <a href="dashboard.html">
-              <i class="bi bi-speedometer2"></i>
-
-              Dashboard
-            </a>
-          </li>
-
-          <li>
-            <a href="departments.html">
-              <i class="bi bi-building"></i>
-
-              Departments
-            </a>
-          </li>
-
-          <li>
-            <a href="courses.html">
-              <i class="bi bi-book"></i>
-
-              Courses
-            </a>
-          </li>
-
-          <li>
-            <a href="lecturers.html">
-              <i class="bi bi-person-workspace"></i>
-
-              Lecturers
-            </a>
-          </li>
-
-          <li>
-            <a href="students.html">
-              <i class="bi bi-mortarboard"></i>
-
-              Students
-            </a>
-          </li>
-
-          <li>
-            <a href="venues.html">
-              <i class="bi bi-bank"></i>
-
-              Venues
-            </a>
-          </li>
-
-          <li>
-            <a href="ai-timetable.html">
-              <i class="bi bi-cpu"></i>
-
-              AI Timetable
-            </a>
-          </li>
-
-          <li>
-            <a href="exam-timetable.html">
-              <i class="bi bi-calendar-check"></i>
-
-              Exam Timetable
-            </a>
-          </li>
-
-          <li>
-            <a href="reports.html">
-              <i class="bi bi-bar-chart"></i>
-
-              Reports
-            </a>
-          </li>
-
-          <li>
-            <a href="settings.html">
-              <i class="bi bi-gear"></i>
-
-              Settings
-            </a>
-          </li>
-
-          <li>
-            <a href="about-system.html">
-              <i class="bi bi-info-circle"></i>
-
-              About System
-            </a>
-          </li>
-
-          <li class="active">
-            <a href="about-developer.html">
-              <i class="bi bi-person-badge"></i>
-
-              About Developer
-            </a>
-          </li>
-
-          <li>
-            <a href="../index.html" id="logoutBtn">
-              <i class="bi bi-box-arrow-left"></i>
-
-              Logout
-            </a>
-          </li>
-        </ul>
-      </aside>
-
-      <main class="main-content">
-        <nav class="topbar">
-          <div>
-            <h3>About Developer</h3>
-
-            <small> Developer Information </small>
-          </div>
-
-          <span id="currentDate"></span>
-        </nav>
-
-        <div class="container-fluid mt-4">
-          <div class="card shadow border-0">
-            <div class="card-header bg-dark text-white text-center">
-              <h5 class="mb-0">
-                <i class="bi bi-person-badge"></i>
-
-                Developer Profile
-              </h5>
-            </div>
-
-            <div class="card-body text-center">
-              <img
-                src="../images/developer.png"
-                class="rounded-circle mb-3"
-                width="150"
-                height="150"
-                alt="Developer Image"
-              />
-
-              <h3>Developer Name</h3>
-
-              <p class="text-muted">Software Developer</p>
-
-              <hr />
-
-              <div class="row">
-                <div class="col-md-6">
-                  <h5>
-                    <i class="bi bi-mortarboard"></i>
-
-                    Education
-                  </h5>
-
-                  <p>
-                    Department of Computer Science
-
-                    <br />
-
-                    Bayero University Kano
-                  </p>
-                </div>
-
-                <div class="col-md-6">
-                  <h5>
-                    <i class="bi bi-code-slash"></i>
-
-                    Skills
-                  </h5>
-
-                  <p>
-                    Web Development
-
-                    <br />
-
-                    JavaScript Programming
-
-                    <br />
-
-                    Database Management
-
-                    <br />
-
-                    Artificial Intelligence
-                  </p>
-                </div>
-              </div>
-
-              <hr />
-
-              <h5>Project Contribution</h5>
-
-              <p>
-                Designed and developed the BUK Intelligent Timetable Management
-                System to provide an automated solution for academic timetable
-                generation and management.
-              </p>
-
-              <hr />
-
-              <h5>Contact Information</h5>
-
-              <p>
-                Email: muhammedibrahim6865@gmail.com
-
-                <br />
-
-                Phone: +234 901 896 7098
-              </p>
-            </div>
-          </div>
-        </div>
-      </main>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+  <title>About Developer | BUK ITMS</title>
+
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet">
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+    rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+
+  <style>
+    #sidebarOpen,
+    #sidebarClose,
+    #sidebarOverlay {
+      display: none;
+    }
+
+    @media (max-width: 767.98px) {
+      .wrapper {
+        display: block;
+        width: 100%;
+        min-width: 0;
+        margin: 0;
+        padding: 0;
+        overflow-x: clip;
+      }
+
+      #sidebarOpen {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      #sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 260px;
+        max-width: 85vw;
+        height: 100dvh;
+        overflow-y: auto;
+        z-index: 1001;
+        transform: translateX(-105%);
+        transition: transform .25s ease;
+      }
+
+      #sidebar.sidebar-open {
+        transform: translateX(0);
+      }
+
+      #sidebarClose {
+        display: inline-flex;
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 2;
+      }
+
+      #sidebarOverlay.show {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, .45);
+        z-index: 1000;
+      }
+
+      .sidebar-header {
+        position: relative;
+      }
+
+      .main-content {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        margin: 0;
+        padding: 12px;
+        box-sizing: border-box;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        min-width: 0;
+      }
+
+      .topbar h3 {
+        font-size: 1.15rem;
+      }
+
+      .container-fluid {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        padding-left: 0;
+        padding-right: 0;
+        box-sizing: border-box;
+      }
+
+      .card {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+      }
+
+      .developer-image {
+        max-width: 100%;
+        object-fit: cover;
+      }
+    }
+  </style>
+</head>
+
+<body>
+<div class="wrapper">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header text-center">
+      <button type="button" id="sidebarClose"
+        class="btn btn-light btn-sm"
+        aria-label="Close navigation">
+        <i class="bi bi-x-lg"></i>
+      </button>
+
+      <img src="../buk-logo.png.JPG"
+        class="sidebar-logo" alt="BUK Logo">
+
+      <h4 class="mt-3">BUK ITMS</h4>
+      <small>Intelligent Timetable System</small>
     </div>
 
-    <script src="../js/settings.js"></script>
-  </body>
+    <ul class="sidebar-menu">
+      <li><a href="dashboard.html">
+        <i class="bi bi-speedometer2"></i> Dashboard
+      </a></li>
+
+      <li><a href="faculty.html">
+        <i class="bi bi-building"></i> Faculties
+      </a></li>
+
+      <li><a href="departments.html">
+        <i class="bi bi-building"></i> Departments
+      </a></li>
+
+      <li><a href="courses.html">
+        <i class="bi bi-book"></i> Courses
+      </a></li>
+
+      <li><a href="lecturers.html">
+        <i class="bi bi-person-workspace"></i> Lecturers
+      </a></li>
+
+      <li><a href="students.html">
+        <i class="bi bi-mortarboard"></i> Students
+      </a></li>
+
+      <li><a href="venues.html">
+        <i class="bi bi-bank"></i> Venues
+      </a></li>
+
+      <li><a href="ai-timetable.html">
+        <i class="bi bi-cpu"></i> AI Timetable
+      </a></li>
+
+      <li><a href="exam-timetable.html">
+        <i class="bi bi-calendar-check"></i> Exam Timetable
+      </a></li>
+
+      <li><a href="reports.html">
+        <i class="bi bi-bar-chart"></i> Reports
+      </a></li>
+
+      <li><a href="settings.html">
+        <i class="bi bi-gear"></i> Settings
+      </a></li>
+
+      <li><a href="about-system.html">
+        <i class="bi bi-info-circle"></i> About System
+      </a></li>
+
+      <li class="active">
+        <a href="about-developer.html">
+          <i class="bi bi-person-badge"></i> About Developer
+        </a>
+      </li>
+
+      <li><a href="../index.html" id="logoutBtn">
+        <i class="bi bi-box-arrow-left"></i> Logout
+      </a></li>
+    </ul>
+  </aside>
+
+  <div id="sidebarOverlay"></div>
+
+  <main class="main-content">
+    <nav class="topbar">
+      <button type="button" id="sidebarOpen"
+        class="btn btn-primary btn-sm"
+        aria-label="Open navigation"
+        aria-controls="sidebar"
+        aria-expanded="false">
+        <i class="bi bi-list"></i>
+      </button>
+
+      <div>
+        <h3>About Developer</h3>
+        <small>Developer Information</small>
+      </div>
+
+      <span id="currentDate" class="ms-auto"></span>
+    </nav>
+
+    <div class="container-fluid mt-4">
+      <div class="card shadow border-0">
+
+        <div class="card-header bg-dark text-white text-center">
+          <h5 class="mb-0">
+            <i class="bi bi-person-badge"></i>
+            Developer Profile
+          </h5>
+        </div>
+
+        <div class="card-body text-center">
+          <img
+            src="../images/developer.png"
+            class="rounded-circle mb-3 developer-image"
+            width="150"
+            height="150"
+            alt="Developer Image">
+
+          <h3>Developer Name</h3>
+          <p class="text-muted">Software Developer</p>
+
+          <hr>
+
+          <div class="row g-4">
+            <div class="col-md-6">
+              <h5>
+                <i class="bi bi-mortarboard"></i>
+                Education
+              </h5>
+
+              <p>
+                Department of Computer Science<br>
+                Bayero University Kano
+              </p>
+            </div>
+
+            <div class="col-md-6">
+              <h5>
+                <i class="bi bi-code-slash"></i>
+                Skills
+              </h5>
+
+              <p>
+                Web Development<br>
+                JavaScript Programming<br>
+                Database Management<br>
+                Artificial Intelligence
+              </p>
+            </div>
+          </div>
+
+          <hr>
+
+          <h5>Project Contribution</h5>
+          <p>
+            Designed and developed the BUK Intelligent Timetable
+            Management System to provide an automated solution
+            for academic timetable generation and management.
+          </p>
+
+          <hr>
+
+          <h5>Contact Information</h5>
+          <p>
+            Email: muhammedibrahim6865@gmail.com<br>
+            Phone: +234 901 896 7098
+          </p>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="../js/settings.js"></script>
+
+<script>
+  const sidebar = document.getElementById("sidebar");
+  const openBtn = document.getElementById("sidebarOpen");
+  const closeBtn = document.getElementById("sidebarClose");
+  const overlay = document.getElementById("sidebarOverlay");
+
+  function openSidebar() {
+    sidebar.classList.add("sidebar-open");
+    overlay.classList.add("show");
+    openBtn.setAttribute("aria-expanded", "true");
+  }
+
+  function closeSidebar() {
+    sidebar.classList.remove("sidebar-open");
+    overlay.classList.remove("show");
+    openBtn.setAttribute("aria-expanded", "false");
+  }
+
+  openBtn.addEventListener("click", openSidebar);
+  closeBtn.addEventListener("click", closeSidebar);
+  overlay.addEventListener("click", closeSidebar);
+
+  document.addEventListener("keydown", function(event) {
+    if (event.key === "Escape") closeSidebar();
+  });
+
+  document.querySelectorAll("#sidebar a").forEach(function(link) {
+    link.addEventListener("click", closeSidebar);
+  });
+
+  document.getElementById("logoutBtn")
+    .addEventListener("click", function() {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      localStorage.removeItem("loggedIn");
+      localStorage.removeItem("username");
+    });
+
+  document.getElementById("currentDate").textContent =
+    new Date().toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric"
+    });
+</script>
+</body>
 </html>
