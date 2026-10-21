@@ -1,32 +1,20 @@
-const express = require("express");
 
+const express = require("express");
 const router = express.Router();
 
 const userController = require("../controllers/userController");
+const {
+  authenticateToken,
+  requireAdmin,
+} = require("../middleware/authMiddleware");
 
-// =============================================
-// GET ALL USERS
-// =============================================
+// User management requires an active administrator.
+router.use(authenticateToken, requireAdmin);
+
 router.get("/", userController.getUsers);
-
-// =============================================
-// CREATE NEW USER
-// =============================================
 router.post("/", userController.createUser);
-
-// =============================================
-// UPDATE USER
-// =============================================
 router.put("/:id", userController.updateUser);
-
-// =============================================
-// ACTIVATE / DEACTIVATE USER
-// =============================================
 router.patch("/:id/status", userController.toggleUserStatus);
-
-// =============================================
-// DELETE USER
-// =============================================
 router.delete("/:id", userController.deleteUser);
 
 module.exports = router;
