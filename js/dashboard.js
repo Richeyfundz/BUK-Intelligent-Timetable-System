@@ -1,25 +1,20 @@
-// ======================================
-// BUK Intelligent Timetable Management System
-// Dashboard - Railway API Version
-// ======================================
+
+ // ======================================
+ // BUK Intelligent Timetable Management System
+ // Dashboard - Railway API Version
+ // ======================================
 
 const API_BASE_URL =
   "https://buk-intelligent-timetable-system-production.up.railway.app/api";
 
 document.addEventListener("DOMContentLoaded", function () {
-  // ===============================
   // Login Check
-  // ===============================
-
   if (localStorage.getItem("loggedIn") !== "true") {
     window.location.href = "../index.html";
     return;
   }
 
-  // ===============================
   // Current Date
-  // ===============================
-
   const today = new Date();
 
   const options = {
@@ -33,23 +28,18 @@ document.addEventListener("DOMContentLoaded", function () {
   const todayDate = document.getElementById("todayDate");
 
   if (currentDate) {
-    currentDate.innerHTML = today.toLocaleDateString("en-GB", options);
+    currentDate.textContent =
+      today.toLocaleDateString("en-GB", options);
   }
 
   if (todayDate) {
-    todayDate.innerHTML = today.toLocaleDateString();
+    todayDate.textContent = today.toLocaleDateString();
   }
 
-  // ===============================
   // Load Dashboard Statistics
-  // ===============================
-
   loadStatistics();
 
-  // ===============================
   // Logout
-  // ===============================
-
   const logoutBtn = document.getElementById("logoutBtn");
 
   if (logoutBtn) {
@@ -62,6 +52,20 @@ document.addEventListener("DOMContentLoaded", function () {
 // ======================================
 
 async function loadStatistics() {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    clearSession();
+    window.location.href = "../index.html";
+    return;
+  }
+
+  const requestOptions = {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  };
+
   try {
     const [
       facultiesResponse,
@@ -71,37 +75,52 @@ async function loadStatistics() {
       studentsResponse,
       venuesResponse,
     ] = await Promise.all([
-      fetch(`${API_BASE_URL}/faculties`),
-      fetch(`${API_BASE_URL}/departments`),
-      fetch(`${API_BASE_URL}/courses`),
-      fetch(`${API_BASE_URL}/lecturers`),
-      fetch(`${API_BASE_URL}/students`),
-      fetch(`${API_BASE_URL}/venues`),
+      fetch(`${API_BASE_URL}/faculties`, requestOptions),
+      fetch(`${API_BASE_URL}/departments`, requestOptions),
+      fetch(`${API_BASE_URL}/courses`, requestOptions),
+      fetch(`${API_BASE_URL}/lecturers`, requestOptions),
+      fetch(`${API_BASE_URL}/students`, requestOptions),
+      fetch(`${API_BASE_URL}/venues`, requestOptions),
     ]);
 
-    // Check for API errors
-    if (
-      !facultiesResponse.ok ||
-      !departmentsResponse.ok ||
-      !coursesResponse.ok ||
-      !lecturersResponse.ok ||
-      !studentsResponse.ok ||
-      !venuesResponse.ok
-    ) {
+    // Handle expired or invalid sessions
+    const responses = [
+      facultiesResponse,
+      departmentsResponse,
+      coursesResponse,
+      lecturersResponse,
+      studentsResponse,
+      venuesResponse,
+    ];
+
+    if (responses.some((response) => response.status === 401)) {
+      clearSession();
+      window.location.href = "../index.html";
+      return;
+    }
+
+    if (responses.some((response) => response.status === 403)) {
+      throw new Error(
+        "Access denied. Check your account status and permissions."
+      );
+    }
+
+    if (responses.some((response) => !response.ok)) {
       throw new Error("Failed to load dashboard data.");
     }
 
-    const facultiesData = await facultiesResponse.json();
-    const departmentsData = await departmentsResponse.json();
-    const coursesData = await coursesResponse.json();
-    const lecturersData = await lecturersResponse.json();
-    const studentsData = await studentsResponse.json();
-    const venuesData = await venuesResponse.json();
+    const [
+      facultiesData,
+      departmentsData,
+      coursesData,
+      lecturersData,
+      studentsData,
+      venuesData,
+    ] = await Promise.all(
+      responses.map((response) => response.json())
+    );
 
-    // ===============================
     // Get Data Arrays
-    // ===============================
-
     const faculties = getDataArray(facultiesData);
     const departments = getDataArray(departmentsData);
     const courses = getDataArray(coursesData);
@@ -109,44 +128,17 @@ async function loadStatistics() {
     const students = getDataArray(studentsData);
     const venues = getDataArray(venuesData);
 
-    // ===============================
     // Update Dashboard
-    // ===============================
-
-    const facultyCount = document.getElementById("facultyCount");
-    const departmentCount = document.getElementById("departmentCount");
-    const courseCount = document.getElementById("courseCount");
-    const lecturerCount = document.getElementById("lecturerCount");
-    const studentCount = document.getElementById("studentCount");
-    const venueCount = document.getElementById("venueCount");
-
-    if (facultyCount) {
-      facultyCount.innerHTML = faculties.length;
-    }
-
-    if (departmentCount) {
-      departmentCount.innerHTML = departments.length;
-    }
-
-    if (courseCount) {
-      courseCount.innerHTML = courses.length;
-    }
-
-    if (lecturerCount) {
-      lecturerCount.innerHTML = lecturers.length;
-    }
-
-    if (studentCount) {
-      studentCount.innerHTML = students.length;
-    }
-
-    if (venueCount) {
-      venueCount.innerHTML = venues.length;
-    }
+    updateCount("facultyCount", faculties.length);
+    updateCount("departmentCount", departments.length);
+    updateCount("courseCount", courses.length);
+    updateCount("lecturerCount", lecturers.length);
+    updateCount("studentCount", students.length);
+    updateCount("venueCount", venues.length);
   } catch (error) {
     console.error("Dashboard loading error:", error);
 
-    // Show zero instead of breaking the dashboard
+    // Show an error instead of misleading zero statistics
     const counters = [
       "facultyCount",
       "departmentCount",
@@ -160,9 +152,21 @@ async function loadStatistics() {
       const element = document.getElementById(id);
 
       if (element) {
-        element.innerHTML = "0";
+        element.textContent = "—";
       }
     });
+  }
+}
+
+// ======================================
+// Update Dashboard Counter
+// ======================================
+
+function updateCount(id, count) {
+  const element = document.getElementById(id);
+
+  if (element) {
+    element.textContent = count;
   }
 }
 
@@ -183,18 +187,27 @@ function getDataArray(response) {
 }
 
 // ======================================
+// Clear Login Session
+// ======================================
+
+function clearSession() {
+  localStorage.removeItem("loggedIn");
+  localStorage.removeItem("username");
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+}
+
+// ======================================
 // Logout
 // ======================================
 
 function logout(e) {
-  e.preventDefault();
+  if (e && typeof e.preventDefault === "function") {
+    e.preventDefault();
+  }
 
   if (confirm("Are you sure you want to logout?")) {
-    localStorage.removeItem("loggedIn");
-    localStorage.removeItem("username");
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-
+    clearSession();
     window.location.href = "../index.html";
   }
 }
