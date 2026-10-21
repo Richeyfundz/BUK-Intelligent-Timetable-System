@@ -5,21 +5,62 @@ const router = express.Router();
 const lecturerController =
   require("../controllers/lecturerController");
 
+const {
+  authenticateToken,
+  requireAdmin,
+} = require("../middleware/authMiddleware");
+
 // Lecturer records
-router.get("/", lecturerController.getAllLecturers);
-router.get("/:id", lecturerController.getLecturerById);
-router.post("/", lecturerController.createLecturer);
-router.put("/:id", lecturerController.updateLecturer);
-router.delete("/:id", lecturerController.deleteLecturer);
+router.get(
+  "/",
+  authenticateToken,
+  lecturerController.getAllLecturers
+);
+
+router.get(
+  "/:id",
+  authenticateToken,
+  lecturerController.getLecturerById
+);
+
+router.post(
+  "/",
+  authenticateToken,
+  requireAdmin,
+  lecturerController.createLecturer
+);
+
+router.put(
+  "/:id",
+  authenticateToken,
+  requireAdmin,
+  lecturerController.updateLecturer
+);
+
+router.delete(
+  "/:id",
+  authenticateToken,
+  requireAdmin,
+  lecturerController.deleteLecturer
+);
 
 // Course assignments
-router.get("/courses", lecturerController.getCourses);
+router.get(
+  "/courses",
+  authenticateToken,
+  lecturerController.getCourses
+);
+
 router.get(
   "/:id/courses",
+  authenticateToken,
   lecturerController.getAssignedCourses
 );
+
 router.put(
   "/:id/courses",
+  authenticateToken,
+  requireAdmin,
   lecturerController.assignCourses
 );
 
