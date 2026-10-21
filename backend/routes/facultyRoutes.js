@@ -1,3 +1,4 @@
+
 const express = require("express");
 const router = express.Router();
 
@@ -9,19 +10,18 @@ const {
   deleteFaculty,
 } = require("../controllers/facultyController");
 
-// GET all faculties
-router.get("/", getAllFaculties);
+const {
+  authenticateToken,
+  requireAdmin,
+} = require("../middleware/authMiddleware");
 
-// GET faculty by ID
-router.get("/:id", getFacultyById);
+// View faculties: active authenticated users
+router.get("/", authenticateToken, getAllFaculties);
+router.get("/:id", authenticateToken, getFacultyById);
 
-// CREATE new faculty
-router.post("/", createFaculty);
-
-// UPDATE faculty
-router.put("/:id", updateFaculty);
-
-// DELETE faculty
-router.delete("/:id", deleteFaculty);
+// Manage faculties: administrators only
+router.post("/", authenticateToken, requireAdmin, createFaculty);
+router.put("/:id", authenticateToken, requireAdmin, updateFaculty);
+router.delete("/:id", authenticateToken, requireAdmin, deleteFaculty);
 
 module.exports = router;
