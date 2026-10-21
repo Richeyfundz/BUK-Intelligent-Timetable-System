@@ -2,22 +2,24 @@
 const express = require("express");
 const router = express.Router();
 
-const aiTimetableController = require("../controllers/aiTimetableController");
+const userController = require("../controllers/userController");
 const {
   authenticateToken,
+  requireAdmin
 } = require("../middleware/authMiddleware");
 
-// Both operations require an active, authenticated account.
-router.post(
-  "/generate",
-  authenticateToken,
-  aiTimetableController.generateTimetable
-);
+// All user-management routes require an Admin account.
+router.use(authenticateToken, requireAdmin);
 
-router.post(
-  "/save",
-  authenticateToken,
-  aiTimetableController.saveGeneratedTimetable
+router.get("/", userController.getUsers);
+router.post("/", userController.createUser);
+router.put("/:id", userController.updateUser);
+router.delete("/:id", userController.deleteUser);
+
+// Toggle a user's Active/Inactive status.
+router.patch(
+  "/:id/status",
+  userController.toggleUserStatus
 );
 
 module.exports = router;
