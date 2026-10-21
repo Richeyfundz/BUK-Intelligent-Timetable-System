@@ -1,8 +1,8 @@
 
- // =============================================
- // BUK Intelligent Timetable Management System
- // Students Module - Railway API Version
- // =============================================
+// =============================================
+// BUK-ITMS STUDENTS MODULE
+// Railway API + Authentication
+// =============================================
 
 const API_BASE_URL =
   "https://buk-intelligent-timetable-system-production.up.railway.app/api";
@@ -13,11 +13,15 @@ const DEPARTMENT_API_URL = `${API_BASE_URL}/departments`;
 let editingStudentId = null;
 
 // =============================================
-// Page Initialization
+// INITIALIZATION
 // =============================================
 
-document.addEventListener("DOMContentLoaded", async function () {
-  if (localStorage.getItem("loggedIn") !== "true") {
+document.addEventListener("DOMContentLoaded", async () => {
+  if (
+    localStorage.getItem("loggedIn") !== "true" ||
+    !localStorage.getItem("token")
+  ) {
+    clearSession();
     window.location.href = "../index.html";
     return;
   }
@@ -33,120 +37,129 @@ document.addEventListener("DOMContentLoaded", async function () {
     });
   }
 
-  const studentForm = document.getElementById("studentForm");
+  const form = document.getElementById("studentForm");
 
-  if (studentForm) {
-    studentForm.addEventListener("submit", saveStudent);
+  if (form) {
+    form.addEventListener("submit", saveStudent);
 
-    studentForm.addEventListener("reset", function () {
+    form.addEventListener("reset", () => {
       editingStudentId = null;
       setSaveButtonText("Save Student");
     });
   }
 
-  const searchInput = document.getElementById("searchStudent");
+  document.getElementById("searchStudent")
+    ?.addEventListener("input", searchStudent);
 
-  if (searchInput) {
-    searchInput.addEventListener("input", searchStudent);
-  }
-
-  const logoutBtn = document.getElementById("logoutBtn");
-
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", logout);
-  }
+  document.getElementById("logoutBtn")
+    ?.addEventListener("click", logout);
 
   await loadDepartmentDropdown();
   await loadStudents();
 });
 
 // =============================================
-// Extract Arrays from API Responses
+// AUTHENTICATION
 // =============================================
+
+function clearSession() {
+  localStorage.removeItem("loggedIn");
+  localStorage.removeItem("username");
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+}
+
+async function apiRequest(url, options = {}) {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    clearSession();
+    window.location.href = "../index.html";
+    throw new Error("Please log in again.");
+  }
+
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      ...(options.body
+        ? { "Content-Type": "application/json" }
+        : {}),
+      ...(options.headers || {}),
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (response.status === 401) {
+    clearSession();
+    window.location.href = "../index.html";
+    throw new Error("Your session expired. Please log in again.");
+  }
+
+  const result = await response.json().catch(() => ({}));
+
+  if (!response.ok || result.success === false) {
+    throw new Error(
+      result.message || result.error || "Request failed."
+    );
+  }
+
+  return result;
+}
 
 function getDataArray(result, key) {
   if (Array.isArray(result)) return result;
-
-  if (result && Array.isArray(result.data)) {
-    return result.data;
-  }
-
-  if (result && Array.isArray(result[key])) {
-    return result[key];
-  }
-
+  if (Array.isArray(result?.data)) return result.data;
+  if (Array.isArray(result?.[key])) return result[key];
   return [];
 }
 
 // =============================================
-// Load Department Dropdown
+// LOAD DEPARTMENTS
 // =============================================
 
 async function loadDepartmentDropdown() {
   const dropdown = document.getElementById("department");
-
   if (!dropdown) return;
 
   dropdown.innerHTML =
     '<option value="">Loading departments...</option>';
 
   try {
-    const response = await fetch(DEPARTMENT_API_URL);
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(
-        result.message || "Failed to load departments"
-      );
-    }
-
+    const result = await apiRequest(DEPARTMENT_API_URL);
     const departments = getDataArray(result, "departments");
 
     dropdown.innerHTML =
       '<option value="">-- Select Department --</option>';
 
-    if (departments.length === 0) {
-      dropdown.innerHTML =
-        '<option value="">No departments found</option>';
-
-      console.error("No departments returned by API:", result);
-      return;
-    }
-
-    departments.forEach(function (department) {
+    departments.forEach((department) => {
       const id = department.id ?? department.department_id;
-
       const name =
         department.department_name ??
         department.name ??
         department.department;
 
-      if (id === undefined || id === null || !name) {
-        console.warn("Invalid department record:", department);
-        return;
-      }
+      if (id == null || !name) return;
 
       const option = document.createElement("option");
       option.value = String(id);
       option.textContent = name;
-
       dropdown.appendChild(option);
     });
 
     if (dropdown.options.length === 1) {
       dropdown.innerHTML =
-        '<option value="">Department records have invalid fields</option>';
+        '<option value="">No departments found</option>';
     }
   } catch (error) {
-    console.error("Error loading departments:", error);
-
     dropdown.innerHTML =
       '<option value="">Failed to load departments</option>';
+    console.error(error);
+    alert(error.message);
   }
 }
 
 // =============================================
-// Save or Update Student
+// SAVE OR UPDATE STUDENT
 // =============================================
 
 async function saveStudent(event) {
@@ -165,9 +178,7 @@ async function saveStudent(event) {
     !genderInput ||
     !levelInput
   ) {
-    alert(
-      "A required field is missing. Check the form IDs in pages/students.html."
-    );
+    alert("A required form field is missing. Check students.html.");
     return;
   }
 
@@ -177,7 +188,13 @@ async function saveStudent(event) {
   const gender = genderInput.value;
   const level = levelInput.value;
 
-  if (!matricNumber || !fullName || !departmentId || !gender || !level) {
+  if (
+    !matricNumber ||
+    !fullName ||
+    !departmentId ||
+    !gender ||
+    !level
+  ) {
     alert("Please fill in all student details.");
     return;
   }
@@ -191,39 +208,33 @@ async function saveStudent(event) {
     return;
   }
 
-  // These field names match backend/controllers/studentController.js.
   const studentData = {
     department_id: Number(departmentId),
     matric_no: matricNumber,
     first_name: firstName,
     last_name: lastName,
-    gender: gender,
-    level: level,
+    gender,
+    level,
   };
+
+  const submitButton = document.querySelector(
+    '#studentForm button[type="submit"]'
+  );
+
+  if (submitButton) submitButton.disabled = true;
 
   try {
     const isEditing = Boolean(editingStudentId);
 
-    const response = await fetch(
+    await apiRequest(
       isEditing
         ? `${STUDENT_API_URL}/${editingStudentId}`
         : STUDENT_API_URL,
       {
         method: isEditing ? "PUT" : "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify(studentData),
       }
     );
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(
-        result.message || result.error || "Failed to save student"
-      );
-    }
 
     alert(
       isEditing
@@ -239,16 +250,17 @@ async function saveStudent(event) {
   } catch (error) {
     console.error("Error saving student:", error);
     alert("Failed to save student: " + error.message);
+  } finally {
+    if (submitButton) submitButton.disabled = false;
   }
 }
 
 // =============================================
-// Load Students
+// LOAD STUDENTS
 // =============================================
 
 async function loadStudents() {
   const table = document.getElementById("studentTable");
-
   if (!table) return;
 
   table.innerHTML = `
@@ -258,20 +270,12 @@ async function loadStudents() {
   `;
 
   try {
-    const response = await fetch(STUDENT_API_URL);
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(
-        result.message || "Failed to load students"
-      );
-    }
-
+    const result = await apiRequest(STUDENT_API_URL);
     const students = getDataArray(result, "students");
 
     table.innerHTML = "";
 
-    if (students.length === 0) {
+    if (!students.length) {
       table.innerHTML = `
         <tr>
           <td colspan="5" class="text-center">No students found.</td>
@@ -280,7 +284,7 @@ async function loadStudents() {
       return;
     }
 
-    students.forEach(function (student) {
+    students.forEach((student) => {
       const fullName =
         student.name ||
         `${student.first_name || ""} ${student.last_name || ""}`.trim();
@@ -296,17 +300,18 @@ async function loadStudents() {
       const departmentName =
         student.department_name || student.department || "";
 
-      const studentLevel = student.level || "";
-
       const row = document.createElement("tr");
 
-      [matricNumber, fullName, departmentName, studentLevel].forEach(
-        function (value) {
-          const cell = document.createElement("td");
-          cell.textContent = value;
-          row.appendChild(cell);
-        }
-      );
+      [
+        matricNumber,
+        fullName,
+        departmentName,
+        student.level || "",
+      ].forEach((value) => {
+        const cell = document.createElement("td");
+        cell.textContent = value;
+        row.appendChild(cell);
+      });
 
       const actions = document.createElement("td");
 
@@ -314,22 +319,20 @@ async function loadStudents() {
       editButton.type = "button";
       editButton.className = "btn btn-warning btn-sm me-2";
       editButton.title = "Edit Student";
-      editButton.innerHTML = '<i class="bi bi-pencil-square"></i>';
-      editButton.addEventListener("click", function () {
-        editStudent(student.id);
-      });
+      editButton.innerHTML =
+        '<i class="bi bi-pencil-square"></i>';
+      editButton.addEventListener("click", () => editStudent(student.id));
 
       const deleteButton = document.createElement("button");
       deleteButton.type = "button";
       deleteButton.className = "btn btn-danger btn-sm";
       deleteButton.title = "Delete Student";
       deleteButton.innerHTML = '<i class="bi bi-trash"></i>';
-      deleteButton.addEventListener("click", function () {
-        deleteStudent(student.id);
-      });
+      deleteButton.addEventListener("click", () =>
+        deleteStudent(student.id)
+      );
 
-      actions.appendChild(editButton);
-      actions.appendChild(deleteButton);
+      actions.append(editButton, deleteButton);
       row.appendChild(actions);
       table.appendChild(row);
     });
@@ -345,27 +348,21 @@ async function loadStudents() {
         </td>
       </tr>
     `;
+
+    alert(error.message);
   }
 }
 
 // =============================================
-// Edit Student
+// EDIT STUDENT
 // =============================================
 
 async function editStudent(id) {
   try {
-    const response = await fetch(`${STUDENT_API_URL}/${id}`);
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(
-        result.message || "Failed to load student"
-      );
-    }
-
+    const result = await apiRequest(`${STUDENT_API_URL}/${id}`);
     const student = result.data || result.student || result;
 
-    editingStudentId = student.id || id;
+    editingStudentId = student.id ?? id;
 
     document.getElementById("regNumber").value =
       student.matric_no ||
@@ -394,10 +391,7 @@ async function editStudent(id) {
 
     setSaveButtonText("Update Student");
 
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   } catch (error) {
     console.error("Error loading student:", error);
     alert("Failed to load student: " + error.message);
@@ -405,7 +399,7 @@ async function editStudent(id) {
 }
 
 // =============================================
-// Delete Student
+// DELETE STUDENT
 // =============================================
 
 async function deleteStudent(id) {
@@ -414,17 +408,9 @@ async function deleteStudent(id) {
   }
 
   try {
-    const response = await fetch(`${STUDENT_API_URL}/${id}`, {
+    await apiRequest(`${STUDENT_API_URL}/${id}`, {
       method: "DELETE",
     });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(
-        result.message || result.error || "Failed to delete student"
-      );
-    }
 
     alert("Student deleted successfully.");
     await loadStudents();
@@ -435,18 +421,18 @@ async function deleteStudent(id) {
 }
 
 // =============================================
-// Search Students
+// SEARCH STUDENTS
 // =============================================
 
 function searchStudent() {
-  const searchInput = document.getElementById("searchStudent");
+  const input = document.getElementById("searchStudent");
   const table = document.getElementById("studentTable");
 
-  if (!searchInput || !table) return;
+  if (!input || !table) return;
 
-  const keyword = searchInput.value.toLowerCase().trim();
+  const keyword = input.value.toLowerCase().trim();
 
-  table.querySelectorAll("tr").forEach(function (row) {
+  table.querySelectorAll("tr").forEach((row) => {
     row.style.display = row.innerText.toLowerCase().includes(keyword)
       ? ""
       : "none";
@@ -454,12 +440,11 @@ function searchStudent() {
 }
 
 // =============================================
-// Save Button Label
+// SAVE BUTTON LABEL
 // =============================================
 
 function setSaveButtonText(label) {
   const form = document.getElementById("studentForm");
-
   if (!form) return;
 
   const button = form.querySelector('button[type="submit"]');
@@ -473,16 +458,11 @@ function setSaveButtonText(label) {
 }
 
 // =============================================
-// Logout
+// LOGOUT
 // =============================================
 
 function logout(event) {
-  event.preventDefault();
-
-  localStorage.removeItem("loggedIn");
-  localStorage.removeItem("username");
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
-
+  event?.preventDefault();
+  clearSession();
   window.location.href = "../index.html";
 }
