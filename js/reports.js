@@ -12,78 +12,116 @@ const REPORT_APIS = {
   lecturers: `${API_BASE_URL}/lecturers`,
   students: `${API_BASE_URL}/students`,
   venues: `${API_BASE_URL}/venues`,
-  timetables: `${API_BASE_URL}/timetables`,
+  timetables: `${API_BASE_URL}/timetables`
 };
 
-document.addEventListener("DOMContentLoaded", () => {
-  if (localStorage.getItem("loggedIn") !== "true") {
-    window.location.href = "../index.html";
-    return;
+// =============================================
+// AUTHENTICATION
+// =============================================
+
+function clearSession() {
+  localStorage.removeItem("loggedIn");
+  localStorage.removeItem("username");
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+}
+
+function checkAuthentication() {
+  const token = localStorage.getItem("token");
+  const loggedIn = localStorage.getItem("loggedIn") === "true";
+
+  if (!token || !loggedIn) {
+    clearSession();
+    window.location.replace("../index.html");
+    return false;
   }
+
+  return true;
+}
+
+// =============================================
+// INITIALIZE PAGE
+// =============================================
+
+document.addEventListener("DOMContentLoaded", function() {
+  if (!checkAuthentication()) return;
 
   const dateElement = document.getElementById("currentDate");
 
   if (dateElement) {
-    dateElement.textContent = new Date().toLocaleDateString("en-GB", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
+    dateElement.textContent = new Date().toLocaleDateString(
+      "en-GB",
+      {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric"
+      }
+    );
   }
 
-  document.getElementById("logoutBtn")?.addEventListener("click", logout);
+  document.getElementById("logoutBtn")?.addEventListener(
+    "click",
+    logout
+  );
 
   loadStatistics();
   loadTimetableReport();
 });
 
 // =============================================
-// FETCH API DATA
+// FETCH API DATA WITH BEARER TOKEN
 // =============================================
 
 async function fetchReportData(url) {
   const token = localStorage.getItem("token");
 
-  const headers = {
-    Accept: "application/json",
-  };
-
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
+  if (!token) {
+    clearSession();
+    window.location.replace("../index.html");
+    throw new Error("Session expired. Please log in again.");
   }
 
-  const response = await fetch(url, { headers });
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${token}`
+    }
+  });
 
   const rawText = await response.text();
 
-  let result;
+  let result = {};
 
   try {
     result = rawText ? JSON.parse(rawText) : {};
   } catch {
     throw new Error(
-      `The API returned an invalid response. HTTP status: ${response.status}`
+      `Invalid API response. HTTP status: ${response.status}`
     );
   }
 
-  if (!response.ok) {
+  if (response.status === 401) {
+    clearSession();
+    window.location.replace("../index.html");
+
+    throw new Error("Session expired. Please log in again.");
+  }
+
+  if (!response.ok || result.success === false) {
     throw new Error(
       result.message ||
-        result.error ||
-        `API request failed with HTTP ${response.status}`
+      result.error ||
+      `API request failed with HTTP ${response.status}.`
     );
-  }
-
-  if (result.success === false) {
-    throw new Error(result.message || "The API reported a failure.");
   }
 
   return result;
 }
 
 // =============================================
-// EXTRACT ARRAY FROM DIFFERENT API FORMATS
+// EXTRACT ARRAYS FROM API RESPONSES
 // =============================================
 
 function getDataArray(result, possibleKeys = []) {
@@ -95,18 +133,12 @@ function getDataArray(result, possibleKeys = []) {
     return [];
   }
 
-  // Common response formats:
-  // { data: [...] }
-  // { courses: [...] }
-  // { results: [...] }
-  // { success: true, data: { courses: [...] } }
-
   const keys = [
     "data",
     "results",
     "records",
     "items",
-    ...possibleKeys,
+    ...possibleKeys
   ];
 
   for (const key of keys) {
@@ -120,7 +152,7 @@ function getDataArray(result, possibleKeys = []) {
       ...possibleKeys,
       "results",
       "records",
-      "items",
+      "items"
     ]) {
       if (Array.isArray(result.data[key])) {
         return result.data[key];
@@ -141,30 +173,30 @@ async function loadStatistics() {
       name: "courses",
       elementId: "reportCourses",
       url: REPORT_APIS.courses,
-      keys: ["courses"],
+      keys: ["courses"]
     },
     {
       name: "lecturers",
       elementId: "reportLecturers",
       url: REPORT_APIS.lecturers,
-      keys: ["lecturers"],
+      keys: ["lecturers"]
     },
     {
       name: "students",
       elementId: "reportStudents",
       url: REPORT_APIS.students,
-      keys: ["students"],
+      keys: ["students"]
     },
     {
       name: "venues",
       elementId: "reportVenues",
       url: REPORT_APIS.venues,
-      keys: ["venues"],
-    },
+      keys: ["venues"]
+    }
   ];
 
   const results = await Promise.allSettled(
-    reports.map((report) => fetchReportData(report.url))
+    reports.map(report => fetchReportData(report.url))
   );
 
   results.forEach((outcome, index) => {
@@ -174,13 +206,15 @@ async function loadStatistics() {
     if (!element) return;
 
     if (outcome.status === "fulfilled") {
-      const records = getDataArray(outcome.value, report.keys);
+      const records = getDataArray(
+        outcome.value,
+        report.keys
+      );
+
       element.textContent = records.length;
 
       console.log(
-        `Reports: ${report.name}:`,
-        records.length,
-        "records"
+        `Reports: ${report.name}: ${records.length} records`
       );
     } else {
       element.textContent = "—";
@@ -201,7 +235,9 @@ async function loadTimetableReport() {
   const table = document.getElementById("reportTable");
 
   if (!table) {
-    console.error("Report table element #reportTable was not found.");
+    console.error(
+      "Report table element #reportTable was not found."
+    );
     return;
   }
 
@@ -215,11 +251,14 @@ async function loadTimetableReport() {
   `;
 
   try {
-    const result = await fetchReportData(REPORT_APIS.timetables);
+    const result = await fetchReportData(
+      REPORT_APIS.timetables
+    );
 
-    console.log("Timetable API response:", result);
-
-    const timetable = getDataArray(result, ["timetables", "timetable"]);
+    const timetable = getDataArray(
+      result,
+      ["timetables", "timetable"]
+    );
 
     table.innerHTML = "";
 
@@ -234,7 +273,6 @@ async function loadTimetableReport() {
       return;
     }
 
-    // Sort records by day and start time.
     const dayOrder = {
       Monday: 1,
       Tuesday: 2,
@@ -242,21 +280,24 @@ async function loadTimetableReport() {
       Thursday: 4,
       Friday: 5,
       Saturday: 6,
-      Sunday: 7,
+      Sunday: 7
     };
 
     timetable.sort((a, b) => {
       const dayA = dayOrder[a.day] || 99;
       const dayB = dayOrder[b.day] || 99;
 
-      if (dayA !== dayB) return dayA - dayB;
+      if (dayA !== dayB) {
+        return dayA - dayB;
+      }
 
-      return String(a.start_time || "").localeCompare(
-        String(b.start_time || "")
-      );
+      return String(a.start_time || a.startTime || "")
+        .localeCompare(
+          String(b.start_time || b.startTime || "")
+        );
     });
 
-    timetable.forEach((item) => {
+    timetable.forEach(item => {
       const row = document.createElement("tr");
 
       const course = firstValue(
@@ -264,40 +305,37 @@ async function loadTimetableReport() {
         item.courseCode,
         item.course_title,
         item.course_name,
-        item.course,
-        "N/A"
+        item.course
       );
 
       const lecturer = firstValue(
         item.lecturer_name,
         item.lecturerName,
         item.lecturer,
-        item.staff_name,
-        "N/A"
+        item.staff_name
       );
 
       const venue = firstValue(
         item.venue_name,
         item.venueName,
         item.venue_code,
-        item.venue,
-        "N/A"
+        item.venue
       );
 
       const day = firstValue(
         item.day,
         item.weekday,
-        item.exam_day,
-        "N/A"
+        item.exam_day
       );
-
-      let time = "N/A";
 
       const startTime = item.start_time || item.startTime;
       const endTime = item.end_time || item.endTime;
 
+      let time = "N/A";
+
       if (startTime && endTime) {
-        time = `${formatTime(startTime)} - ${formatTime(endTime)}`;
+        time =
+          `${formatTime(startTime)} - ${formatTime(endTime)}`;
       } else if (item.time) {
         time = item.time;
       }
@@ -324,7 +362,9 @@ async function loadTimetableReport() {
         <td colspan="5" class="text-center text-danger py-4">
           <i class="bi bi-exclamation-triangle me-2"></i>
           Failed to load timetable report.
-          <div class="small mt-2">${escapeHTML(error.message)}</div>
+          <div class="small mt-2">
+            ${escapeHTML(error.message)}
+          </div>
         </td>
       </tr>
     `;
@@ -332,7 +372,7 @@ async function loadTimetableReport() {
 }
 
 // =============================================
-// GET FIRST AVAILABLE FIELD
+// GET FIRST AVAILABLE VALUE
 // =============================================
 
 function firstValue(...values) {
@@ -375,7 +415,9 @@ function formatTime(time) {
 // =============================================
 
 function escapeHTML(value) {
-  if (value === null || value === undefined) return "";
+  if (value === null || value === undefined) {
+    return "";
+  }
 
   return String(value)
     .replace(/&/g, "&amp;")
@@ -392,11 +434,6 @@ function escapeHTML(value) {
 function logout(event) {
   event.preventDefault();
 
-  localStorage.removeItem("loggedIn");
-  localStorage.removeItem("username");
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
-
+  clearSession();
   window.location.href = "../index.html";
 }
-
