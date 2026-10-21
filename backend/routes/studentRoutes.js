@@ -1,16 +1,48 @@
+
 const express = require("express");
 const router = express.Router();
 
-const studentController = require("../controllers/studentController");
+const studentController =
+  require("../controllers/studentController");
 
-router.get("/", studentController.getAllStudents);
+const {
+  authenticateToken,
+  requireAdmin,
+} = require("../middleware/authMiddleware");
 
-router.get("/:id", studentController.getStudentById);
+// View student records
+router.get(
+  "/",
+  authenticateToken,
+  studentController.getAllStudents
+);
 
-router.post("/", studentController.createStudent);
+router.get(
+  "/:id",
+  authenticateToken,
+  studentController.getStudentById
+);
 
-router.put("/:id", studentController.updateStudent);
+// Manage student records
+router.post(
+  "/",
+  authenticateToken,
+  requireAdmin,
+  studentController.createStudent
+);
 
-router.delete("/:id", studentController.deleteStudent);
+router.put(
+  "/:id",
+  authenticateToken,
+  requireAdmin,
+  studentController.updateStudent
+);
+
+router.delete(
+  "/:id",
+  authenticateToken,
+  requireAdmin,
+  studentController.deleteStudent
+);
 
 module.exports = router;
