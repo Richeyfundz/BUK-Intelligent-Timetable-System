@@ -130,7 +130,11 @@ document.querySelectorAll("#sidebar a").forEach(function(link) {
 
 document.getElementById("logoutBtn")?.addEventListener(
   "click",
-  clearSession
+  function(event) {
+    event.preventDefault();
+    clearSession();
+    window.location.replace("../index.html");
+  }
 );
 
 // =============================================
