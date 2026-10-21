@@ -1,58 +1,104 @@
+
 const db = require("../config/database");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 exports.login = (req, res) => {
-  const { username, password } = req.body;
+  const { username, password } = req.body || {};
 
-  const sql = "SELECT * FROM users WHERE username = ?";
+  if (
+    typeof username !== "string" ||
+    typeof password !== "string" ||
+    !username.trim() ||
+    !password
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "Username and password are required.",
+    });
+  }
 
-  db.query(sql, [username], async (err, results) => {
+  if (!process.env.JWT_SECRET) {
+    console.error("Login configuration error: JWT_SECRET is missing.");
+
+    return res.status(500).json({
+      success: false,
+      message: "Login service is temporarily unavailable.",
+    });
+  }
+
+  const sql = `
+    SELECT id, username, password, role, status
+    FROM users
+    WHERE username = ?
+    LIMIT 1
+  `;
+
+  db.query(sql, [username.trim()], async (err, results) => {
     if (err) {
-      console.log(err);
-      return res.status(500).json(err);
-    }
+      console.error("Login database query failed.");
 
-    console.log("User Found:", results);
-
-    if (results.length === 0) {
-      return res.status(401).json({
+      return res.status(500).json({
         success: false,
-        message: "User not found.",
+        message: "Unable to process login at this time.",
       });
     }
 
-    const user = results[0];
-
-    const match = await bcrypt.compare(password, user.password);
-
-    console.log("Password Match:", match);
-
-    if (!match) {
+    if (!results || results.length === 0) {
       return res.status(401).json({
         success: false,
         message: "Invalid username or password.",
       });
     }
 
-    const token = jwt.sign(
-      {
-        id: user.id,
-        username: user.username,
-        role: user.role,
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: "1d" },
-    );
+    const user = results[0];
 
-    res.json({
-      success: true,
-      token,
-      user: {
-        id: user.id,
-        username: user.username,
-        role: user.role,
-      },
-    });
+    try {
+      const match = await bcrypt.compare(password, user.password);
+
+      if (!match) {
+        return res.status(401).json({
+          success: false,
+          message: "Invalid username or password.",
+        });
+      }
+
+      if (
+        typeof user.status !== "string" ||
+        user.status.toLowerCase() !== "active"
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: "This account is inactive. Contact an administrator.",
+        });
+      }
+
+      const token = jwt.sign(
+        {
+          id: user.id,
+          username: user.username,
+          role: user.role,
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: "1d" }
+      );
+
+      return res.json({
+        success: true,
+        token,
+        user: {
+          id: user.id,
+          username: user.username,
+          role: user.role,
+        },
+      });
+    } catch (error) {
+      console.error("Login password verification or token generation failed.");
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to process login at this time.",
+      });
+    }
   });
 };
