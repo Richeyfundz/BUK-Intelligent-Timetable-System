@@ -13,20 +13,68 @@ const FACULTY_API_URL = `${API_BASE_URL}/faculties`;
 
 let editingDepartmentId = null;
 
-console.log("DEPARTMENTS.JS LOADED");
+// =============================================
+// Authentication
+// =============================================
+
+function getToken() {
+  return localStorage.getItem("token");
+}
+
+function clearSession() {
+  localStorage.removeItem("loggedIn");
+  localStorage.removeItem("username");
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+  window.location.href = "../index.html";
+}
+
+async function apiRequest(url, options = {}) {
+  const token = getToken();
+
+  if (!token || localStorage.getItem("loggedIn") !== "true") {
+    clearSession();
+    throw new Error("Please log in again.");
+  }
+
+  const headers = {
+    ...(options.headers || {}),
+    Authorization: `Bearer ${token}`,
+  };
+
+  if (options.body) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  const response = await fetch(url, {
+    ...options,
+    headers,
+  });
+
+  if (response.status === 401) {
+    clearSession();
+    throw new Error("Your session has expired. Please log in again.");
+  }
+
+  const result = await response.json();
+
+  if (!response.ok || result.success === false) {
+    throw new Error(result.message || "The request failed.");
+  }
+
+  return result;
+}
 
 // =============================================
 // Page Initialization
 // =============================================
 
 document.addEventListener("DOMContentLoaded", function () {
-  // Login Check
-  if (localStorage.getItem("loggedIn") !== "true") {
-    window.location.href = "../index.html";
+  if (localStorage.getItem("loggedIn") !== "true" || !getToken()) {
+    clearSession();
     return;
   }
 
-  // Current Date
   const currentDate = document.getElementById("currentDate");
 
   if (currentDate) {
@@ -38,33 +86,43 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // Load Faculties
-  loadFacultyDropdown();
-
-  // Load Departments
-  loadDepartments();
-
-  // Department Form
   const departmentForm = document.getElementById("departmentForm");
 
   if (departmentForm) {
     departmentForm.addEventListener("submit", saveDepartment);
   }
 
-  // Search
   const searchInput = document.getElementById("searchDepartment");
 
   if (searchInput) {
     searchInput.addEventListener("keyup", searchDepartment);
   }
 
-  // Logout
   const logoutBtn = document.getElementById("logoutBtn");
 
   if (logoutBtn) {
     logoutBtn.addEventListener("click", logout);
   }
+
+  loadFacultyDropdown();
+  loadDepartments();
 });
+
+// =============================================
+// HTML Escape
+// =============================================
+
+function escapeHTML(value) {
+  return String(value ?? "").replace(/[&<>"']/g, function (char) {
+    return {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;",
+    }[char];
+  });
+}
 
 // =============================================
 // Load Faculties into Dropdown
@@ -78,43 +136,40 @@ async function loadFacultyDropdown() {
     return;
   }
 
+  const previousValue = dropdown.value;
+
   try {
-    const response = await fetch(FACULTY_API_URL);
+    const result = await apiRequest(FACULTY_API_URL);
 
-    const result = await response.json();
-
-    console.log("Faculty API Response:", result);
-
-    dropdown.innerHTML = '<option value="">-- Select Faculty --</option>';
-
-    const faculties = Array.isArray(result)
-      ? result
-      : Array.isArray(result.data)
-        ? result.data
+    const faculties = Array.isArray(result.data)
+      ? result.data
+      : Array.isArray(result)
+        ? result
         : [];
 
-    if (faculties.length > 0) {
-      faculties.forEach(function (faculty) {
-        const option = document.createElement("option");
+    dropdown.innerHTML =
+      '<option value="">-- Select Faculty --</option>';
 
-        option.value = faculty.id;
-        option.textContent = faculty.faculty_name;
+    if (faculties.length === 0) {
+      dropdown.innerHTML =
+        '<option value="">No faculties available</option>';
+      return;
+    }
 
-        dropdown.appendChild(option);
-      });
+    faculties.forEach(function (faculty) {
+      const option = document.createElement("option");
+      option.value = faculty.id;
+      option.textContent = faculty.faculty_name || "Unnamed Faculty";
+      dropdown.appendChild(option);
+    });
 
-      console.log("Faculties loaded successfully.");
-    } else {
-      dropdown.innerHTML = '<option value="">No faculties available</option>';
-
-      console.log("No faculties found.");
+    if (previousValue) {
+      dropdown.value = previousValue;
     }
   } catch (error) {
     console.error("Faculty Loading Error:", error);
-
-    dropdown.innerHTML = '<option value="">Unable to load faculties</option>';
-
-    alert("Unable to load faculties from the server.");
+    dropdown.innerHTML =
+      '<option value="">Unable to load faculties</option>';
   }
 }
 
@@ -138,19 +193,13 @@ async function saveDepartment(e) {
   const departmentCode = codeElement.value.trim();
   const departmentName = nameElement.value.trim();
 
-  // Validation
   if (!facultyId) {
     alert("Please select a Faculty.");
     return;
   }
 
-  if (!departmentCode) {
-    alert("Please enter the Department Code.");
-    return;
-  }
-
-  if (!departmentName) {
-    alert("Please enter the Department Name.");
+  if (!departmentCode || !departmentName) {
+    alert("Department Code and Department Name are required.");
     return;
   }
 
@@ -162,64 +211,40 @@ async function saveDepartment(e) {
   };
 
   try {
-    let response;
+    const isEditing = editingDepartmentId !== null;
 
-    // =============================================
-    // UPDATE
-    // =============================================
+    const url = isEditing
+      ? `${API_URL}/${editingDepartmentId}`
+      : API_URL;
 
-    if (editingDepartmentId) {
-      response = await fetch(`${API_URL}/${editingDepartmentId}`, {
-        method: "PUT",
+    await apiRequest(url, {
+      method: isEditing ? "PUT" : "POST",
+      body: JSON.stringify(departmentData),
+    });
 
-        headers: {
-          "Content-Type": "application/json",
-        },
-
-        body: JSON.stringify(departmentData),
-      });
-    }
-
-    // =============================================
-    // CREATE
-    // =============================================
-    else {
-      response = await fetch(API_URL, {
-        method: "POST",
-
-        headers: {
-          "Content-Type": "application/json",
-        },
-
-        body: JSON.stringify(departmentData),
-      });
-    }
-
-    const result = await response.json();
-
-    console.log("Department Save Response:", result);
-
-    if (!response.ok || result.success === false) {
-      alert(result.message || "Failed to save department.");
-      return;
-    }
-
-    if (editingDepartmentId) {
-      alert("Department updated successfully.");
-    } else {
-      alert("Department added successfully.");
-    }
-
-    // Reset
-    document.getElementById("departmentForm").reset();
+    alert(
+      isEditing
+        ? "Department updated successfully."
+        : "Department added successfully."
+    );
 
     editingDepartmentId = null;
 
+    document.getElementById("departmentForm").reset();
+
+    const submitButton = document.querySelector(
+      '#departmentForm button[type="submit"]'
+    );
+
+    if (submitButton) {
+      submitButton.innerHTML = "Save Department";
+    }
+
     await loadDepartments();
+    await loadFacultyDropdown();
   } catch (error) {
     console.error("Save Department Error:", error);
-
-    alert("Unable to connect to the server.");
+    alert(error.message || "Unable to save department.");
   }
 }
 
@@ -236,19 +261,15 @@ async function loadDepartments() {
   }
 
   try {
-    const response = await fetch(API_URL);
+    const result = await apiRequest(API_URL);
 
-    const result = await response.json();
-
-    console.log("Department API Response:", result);
+    const departments = Array.isArray(result.data)
+      ? result.data
+      : Array.isArray(result)
+        ? result
+        : [];
 
     table.innerHTML = "";
-
-    const departments = Array.isArray(result)
-      ? result
-      : Array.isArray(result.data)
-        ? result.data
-        : [];
 
     if (departments.length === 0) {
       table.innerHTML = `
@@ -258,40 +279,36 @@ async function loadDepartments() {
           </td>
         </tr>
       `;
-
       return;
     }
 
     departments.forEach(function (department) {
+      const id = Number(department.id);
+
+      if (!Number.isInteger(id) || id <= 0) {
+        return;
+      }
+
       const row = document.createElement("tr");
 
       row.innerHTML = `
-        <td>
-          ${escapeHTML(department.department_code)}
-        </td>
-
-        <td>
-          ${escapeHTML(department.department_name)}
-        </td>
-
-        <td>
-          ${escapeHTML(department.faculty_name || "N/A")}
-        </td>
-
+        <td>${escapeHTML(department.department_code)}</td>
+        <td>${escapeHTML(department.department_name)}</td>
+        <td>${escapeHTML(department.faculty_name || "N/A")}</td>
         <td>
           <button
             type="button"
             class="btn btn-warning btn-sm me-1"
-            onclick="editDepartment(${department.id})"
-          >
+            onclick="editDepartment(${id})"
+            aria-label="Edit department">
             <i class="bi bi-pencil-square"></i>
           </button>
 
           <button
             type="button"
             class="btn btn-danger btn-sm"
-            onclick="deleteDepartment(${department.id})"
-          >
+            onclick="deleteDepartment(${id})"
+            aria-label="Delete department">
             <i class="bi bi-trash"></i>
           </button>
         </td>
@@ -305,7 +322,7 @@ async function loadDepartments() {
     table.innerHTML = `
       <tr>
         <td colspan="4" class="text-center text-danger py-4">
-          Unable to load departments.
+          ${escapeHTML(error.message || "Unable to load departments.")}
         </td>
       </tr>
     `;
@@ -322,26 +339,15 @@ async function deleteDepartment(id) {
   }
 
   try {
-    const response = await fetch(`${API_URL}/${id}`, {
+    await apiRequest(`${API_URL}/${id}`, {
       method: "DELETE",
     });
 
-    const result = await response.json();
-
-    console.log("Delete Department Response:", result);
-
-    if (!response.ok || result.success === false) {
-      alert(result.message || "Failed to delete department.");
-      return;
-    }
-
     alert("Department deleted successfully.");
-
     await loadDepartments();
   } catch (error) {
     console.error("Delete Department Error:", error);
-
-    alert("Unable to connect to the server.");
+    alert(error.message || "Unable to delete department.");
   }
 }
 
@@ -351,20 +357,14 @@ async function deleteDepartment(id) {
 
 async function editDepartment(id) {
   try {
-    const response = await fetch(`${API_URL}/${id}`);
+    const result = await apiRequest(`${API_URL}/${id}`);
+    const department = result.data;
 
-    const result = await response.json();
-
-    console.log("Edit Department Response:", result);
-
-    if (!response.ok || result.success === false) {
-      alert(result.message || "Department not found.");
+    if (!department) {
+      alert("Department not found.");
       return;
     }
 
-    const department = result.data;
-
-    // Load faculties first
     await loadFacultyDropdown();
 
     const faculty = document.getElementById("faculty");
@@ -376,34 +376,31 @@ async function editDepartment(id) {
     }
 
     if (code) {
-      code.value = department.department_code;
+      code.value = department.department_code || "";
     }
 
     if (name) {
-      name.value = department.department_name;
+      name.value = department.department_name || "";
     }
 
-    // Store ID for PUT update
     editingDepartmentId = id;
 
-    // Change submit button text if available
     const submitButton = document.querySelector(
-      '#departmentForm button[type="submit"]',
+      '#departmentForm button[type="submit"]'
     );
 
     if (submitButton) {
-      submitButton.innerHTML = '<i class="bi bi-save"></i> Update Department';
+      submitButton.innerHTML =
+        '<i class="bi bi-save"></i> Update Department';
     }
 
-    // Scroll to form
     window.scrollTo({
       top: 0,
       behavior: "smooth",
     });
   } catch (error) {
     console.error("Edit Department Error:", error);
-
-    alert("Unable to load department.");
+    alert(error.message || "Unable to load department.");
   }
 }
 
@@ -420,12 +417,10 @@ function searchDepartment() {
 
   const keyword = searchInput.value.toLowerCase().trim();
 
-  const rows = document.querySelectorAll("#departmentTable tr");
-
-  rows.forEach(function (row) {
-    const text = row.innerText.toLowerCase();
-
-    row.style.display = text.includes(keyword) ? "" : "none";
+  document.querySelectorAll("#departmentTable tr").forEach(function (row) {
+    row.style.display = row.innerText.toLowerCase().includes(keyword)
+      ? ""
+      : "none";
   });
 }
 
@@ -435,28 +430,5 @@ function searchDepartment() {
 
 function logout(e) {
   e.preventDefault();
-
-  localStorage.removeItem("loggedIn");
-  localStorage.removeItem("username");
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
-
-  window.location.href = "../index.html";
-}
-
-// =============================================
-// HTML Escape
-// =============================================
-
-function escapeHTML(value) {
-  if (value === null || value === undefined) {
-    return "";
-  }
-
-  return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+  clearSession();
 }
