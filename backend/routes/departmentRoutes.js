@@ -1,3 +1,4 @@
+
 const express = require("express");
 const router = express.Router();
 
@@ -9,19 +10,18 @@ const {
   deleteDepartment,
 } = require("../controllers/departmentcontroller");
 
-// Get all departments
-router.get("/", getAllDepartments);
+const {
+  authenticateToken,
+  requireAdmin,
+} = require("../middleware/authMiddleware");
 
-// Get one department
-router.get("/:id", getDepartmentById);
+// View departments: active authenticated users
+router.get("/", authenticateToken, getAllDepartments);
+router.get("/:id", authenticateToken, getDepartmentById);
 
-// Create department
-router.post("/", createDepartment);
-
-// Update department
-router.put("/:id", updateDepartment);
-
-// Delete department
-router.delete("/:id", deleteDepartment);
+// Manage departments: administrators only
+router.post("/", authenticateToken, requireAdmin, createDepartment);
+router.put("/:id", authenticateToken, requireAdmin, updateDepartment);
+router.delete("/:id", authenticateToken, requireAdmin, deleteDepartment);
 
 module.exports = router;
