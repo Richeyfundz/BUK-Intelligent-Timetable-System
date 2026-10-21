@@ -1,3 +1,4 @@
+
 // =====================================================
 // BUK-ITMS: AI TIMETABLE FRONTEND
 // File: js/ai-timetable.js
@@ -6,16 +7,84 @@
 const API_BASE_URL =
   "https://buk-intelligent-timetable-system-production.up.railway.app/api";
 
-const AI_TIMETABLE_URL =
-  `${API_BASE_URL}/ai-timetables`;
+const AI_TIMETABLE_URL = `${API_BASE_URL}/ai-timetables`;
 
 let generatedTimetable = [];
+
+// =====================================================
+// AUTHENTICATION
+// =====================================================
+
+function clearSession() {
+  localStorage.removeItem("loggedIn");
+  localStorage.removeItem("username");
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+  window.location.href = "../index.html";
+}
+
+function getAuthHeaders() {
+  const token = localStorage.getItem("token");
+
+  if (
+    !token ||
+    localStorage.getItem("loggedIn") !== "true"
+  ) {
+    clearSession();
+    throw new Error("Please log in again.");
+  }
+
+  return {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`
+  };
+}
+
+async function readAPIResponse(response) {
+  if (response.status === 401) {
+    clearSession();
+    throw new Error(
+      "Your session has expired. Please log in again."
+    );
+  }
+
+  const text = await response.text();
+  let result;
+
+  try {
+    result = text ? JSON.parse(text) : {};
+  } catch {
+    throw new Error(
+      "The server returned an unexpected response."
+    );
+  }
+
+  if (!response.ok || result.success === false) {
+    const error = new Error(
+      result.message ||
+        `Server request failed (${response.status}).`
+    );
+
+    error.details = result;
+    throw error;
+  }
+
+  return result;
+}
 
 // =====================================================
 // INITIALIZE PAGE
 // =====================================================
 
 document.addEventListener("DOMContentLoaded", () => {
+  if (
+    localStorage.getItem("loggedIn") !== "true" ||
+    !localStorage.getItem("token")
+  ) {
+    clearSession();
+    return;
+  }
+
   const form = document.getElementById("generatorForm");
   const saveButton = document.getElementById("saveTimetable");
   const clearButton = document.getElementById("clearTimetable");
@@ -41,50 +110,6 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // =====================================================
-// API HELPERS
-// =====================================================
-
-function getAuthHeaders() {
-  const headers = {
-    "Content-Type": "application/json"
-  };
-
-  const token = localStorage.getItem("token");
-
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-
-  return headers;
-}
-
-async function readAPIResponse(response) {
-  const text = await response.text();
-
-  let result;
-
-  try {
-    result = text ? JSON.parse(text) : {};
-  } catch {
-    throw new Error(
-      "The server returned an unexpected response."
-    );
-  }
-
-  if (!response.ok || result.success === false) {
-    const error = new Error(
-      result.message ||
-        `Server request failed (${response.status}).`
-    );
-
-    error.details = result;
-    throw error;
-  }
-
-  return result;
-}
-
-// =====================================================
 // GENERATE TIMETABLE
 // =====================================================
 
@@ -103,12 +128,7 @@ async function generateTimetable(event) {
   const endDate =
     document.getElementById("endDate").value;
 
-  if (
-    !semester ||
-    !academicYear ||
-    !startDate ||
-    !endDate
-  ) {
+  if (!semester || !academicYear || !startDate || !endDate) {
     showMessage(
       "Please complete all timetable settings.",
       "warning"
@@ -130,11 +150,22 @@ async function generateTimetable(event) {
   const saveButton =
     document.getElementById("saveTimetable");
 
+  if (!generateButton) {
+    showMessage(
+      "The Generate button was not found.",
+      "danger"
+    );
+    return;
+  }
+
   generateButton.disabled = true;
   generateButton.innerHTML =
     '<span class="spinner-border spinner-border-sm me-2"></span>Generating...';
 
-  saveButton.hidden = true;
+  if (saveButton) {
+    saveButton.hidden = true;
+  }
+
   clearSummary();
 
   showMessage(
@@ -159,21 +190,15 @@ async function generateTimetable(event) {
 
     const result = await readAPIResponse(response);
 
-    // The backend currently returns the array as result.data.
-    // Also support wrapped response formats.
     let timetable = null;
 
     if (Array.isArray(result.data)) {
       timetable = result.data;
     } else if (Array.isArray(result.timetable)) {
       timetable = result.timetable;
-    } else if (
-      Array.isArray(result.generatedTimetable)
-    ) {
+    } else if (Array.isArray(result.generatedTimetable)) {
       timetable = result.generatedTimetable;
-    } else if (
-      Array.isArray(result.generated_timetable)
-    ) {
+    } else if (Array.isArray(result.generated_timetable)) {
       timetable = result.generated_timetable;
     } else if (
       result.data &&
@@ -188,10 +213,7 @@ async function generateTimetable(event) {
     }
 
     if (!Array.isArray(timetable)) {
-      console.error(
-        "Unexpected timetable response:",
-        result
-      );
+      console.error("Unexpected timetable response:", result);
 
       throw new Error(
         "The backend did not return a timetable array. Check the backend response."
@@ -202,6 +224,7 @@ async function generateTimetable(event) {
       generatedTimetable = [];
 
       localStorage.removeItem("generatedTimetable");
+
       displayTimetable([]);
       clearSummary();
 
@@ -214,8 +237,7 @@ async function generateTimetable(event) {
 
     generatedTimetable = timetable.map((item) => ({
       ...item,
-      academic_year:
-        item.academic_year || academicYear,
+      academic_year: item.academic_year || academicYear,
       semester: item.semester || semester
     }));
 
@@ -228,33 +250,26 @@ async function generateTimetable(event) {
 
     showSummary(
       generatedTimetable,
-      result.summary ||
-        result.data?.summary ||
-        null
+      result.summary || result.data?.summary || null
     );
 
-    saveButton.hidden = false;
+    if (saveButton) {
+      saveButton.hidden = false;
+    }
 
     showMessage(
       `Timetable generated successfully: ${generatedTimetable.length} session(s). Review before saving.`,
       "success"
     );
   } catch (error) {
-    console.error(
-      "Generate Timetable Error:",
-      error
-    );
+    console.error("Generate Timetable Error:", error);
 
     if (error.details) {
-      console.error(
-        "Backend error details:",
-        error.details
-      );
+      console.error("Backend error details:", error.details);
     }
 
     showMessage(
-      error.message ||
-        "Failed to generate the timetable.",
+      error.message || "Failed to generate the timetable.",
       "danger"
     );
   } finally {
@@ -269,8 +284,7 @@ async function generateTimetable(event) {
 // =====================================================
 
 function displayTimetable(timetable) {
-  const tableBody =
-    document.getElementById("timetableTable");
+  const tableBody = document.getElementById("timetableTable");
 
   if (!tableBody) return;
 
@@ -279,8 +293,7 @@ function displayTimetable(timetable) {
   if (!Array.isArray(timetable) || !timetable.length) {
     tableBody.innerHTML = `
       <tr>
-        <td colspan="6"
-            class="text-center text-secondary py-4">
+        <td colspan="6" class="text-center text-secondary py-4">
           No timetable entries to display.
         </td>
       </tr>
@@ -296,8 +309,8 @@ function displayTimetable(timetable) {
       return dateA.localeCompare(dateB);
     }
 
-    return String(a.start_time || "").localeCompare(
-      String(b.start_time || "")
+    return normalizeTime(a.start_time).localeCompare(
+      normalizeTime(b.start_time)
     );
   });
 
@@ -340,12 +353,7 @@ function displayTimetable(timetable) {
         courses: []
       });
     } else if (
-      [
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday"
-      ].includes(day)
+      ["Monday", "Tuesday", "Wednesday", "Thursday"].includes(day)
     ) {
       scheduleRows.push({
         date,
@@ -400,13 +408,7 @@ function displayTimetable(timetable) {
 
     tr.appendChild(timeCell);
 
-    const columns = [
-      { key: "100" },
-      { key: "200" },
-      { key: "300" },
-      { key: "400" },
-      { key: "other" }
-    ];
+    const columns = ["100", "200", "300", "400", "other"];
 
     columns.forEach((column) => {
       const td = document.createElement("td");
@@ -416,57 +418,30 @@ function displayTimetable(timetable) {
           .replace(/\s*level/i, "")
           .trim();
 
-        if (column.key === "other") {
-          return ![
-            "100",
-            "200",
-            "300",
-            "400"
-          ].includes(level);
+        if (column === "other") {
+          return !["100", "200", "300", "400"].includes(level);
         }
 
-        return level === column.key;
+        return level === column;
       });
 
       if (!courses.length) {
-        td.innerHTML =
-          '<span class="text-muted">—</span>';
+        td.innerHTML = '<span class="text-muted">—</span>';
       } else {
         courses.forEach((course) => {
           const card = document.createElement("div");
           card.className = "course-card mb-2";
 
-          const code = escapeHTML(
-            course.course_code || "Course"
-          );
-
-          const title = escapeHTML(
-            course.course_title || course.title || ""
-          );
-
-          const lecturer = escapeHTML(
-            course.lecturer_name ||
-              course.lecturer ||
-              "Not provided"
-          );
-
-          const venue = escapeHTML(
-            course.venue_name ||
-              course.venue_code ||
-              course.venue ||
-              "Not provided"
-          );
-
           card.innerHTML = `
-            <strong>${code}</strong>
-            <div>${title}</div>
+            <strong>${escapeHTML(course.course_code || "Course")}</strong>
+            <div>${escapeHTML(course.course_title || course.title || "")}</div>
             <small>
               <i class="bi bi-person"></i>
-              ${lecturer}
+              ${escapeHTML(course.lecturer_name || course.lecturer || "Not provided")}
             </small>
             <small>
               <i class="bi bi-geo-alt"></i>
-              ${venue}
+              ${escapeHTML(course.venue_name || course.venue_code || course.venue || "Not provided")}
             </small>
           `;
 
@@ -486,29 +461,21 @@ function displayTimetable(timetable) {
 // =====================================================
 
 function showSummary(timetable, serverSummary = null) {
-  const container =
-    document.getElementById("timetableSummary");
+  const container = document.getElementById("timetableSummary");
 
   if (!container) return;
 
   const courses = new Set(
-    timetable.map(
-      (item) => item.course_id ?? item.course_code
-    )
+    timetable.map((item) => item.course_id ?? item.course_code)
   );
 
   const levels = new Set(
-    timetable.map(
-      (item) => String(item.level ?? "Other")
-    )
+    timetable.map((item) => String(item.level ?? "Other"))
   );
 
   const venues = new Set(
     timetable.map(
-      (item) =>
-        item.venue_id ??
-        item.venue_code ??
-        item.venue_name
+      (item) => item.venue_id ?? item.venue_code ?? item.venue_name
     )
   );
 
@@ -542,24 +509,18 @@ function showSummary(timetable, serverSummary = null) {
           <i class="bi ${stat.icon} me-1"></i>
           ${stat.title}
         </div>
-        <div class="fs-3 fw-bold">
-          ${stat.value}
-        </div>
+        <div class="fs-3 fw-bold">${stat.value}</div>
       </div>
     </div>
   `).join("");
 
   if (serverSummary) {
-    console.log(
-      "Backend timetable summary:",
-      serverSummary
-    );
+    console.log("Backend timetable summary:", serverSummary);
   }
 }
 
 function clearSummary() {
-  const container =
-    document.getElementById("timetableSummary");
+  const container = document.getElementById("timetableSummary");
 
   if (container) {
     container.innerHTML = "";
@@ -572,31 +533,26 @@ function clearSummary() {
 
 async function saveTimetable() {
   if (!generatedTimetable.length) {
-    showMessage(
-      "Generate a timetable before saving.",
-      "warning"
-    );
+    showMessage("Generate a timetable before saving.", "warning");
     return;
   }
 
-  const saveButton =
-    document.getElementById("saveTimetable");
+  const saveButton = document.getElementById("saveTimetable");
+
+  if (!saveButton) return;
 
   saveButton.disabled = true;
   saveButton.innerHTML =
     '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
 
   try {
-    const response = await fetch(
-      `${AI_TIMETABLE_URL}/save`,
-      {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: JSON.stringify({
-          timetable: generatedTimetable
-        })
-      }
-    );
+    const response = await fetch(`${AI_TIMETABLE_URL}/save`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        timetable: generatedTimetable
+      })
+    });
 
     const result = await readAPIResponse(response);
 
@@ -606,7 +562,6 @@ async function saveTimetable() {
     );
 
     saveButton.hidden = true;
-
     localStorage.removeItem("generatedTimetable");
   } catch (error) {
     console.error("Save Timetable Error:", error);
@@ -634,17 +589,13 @@ function clearTimetable() {
   displayTimetable([]);
   clearSummary();
 
-  const saveButton =
-    document.getElementById("saveTimetable");
+  const saveButton = document.getElementById("saveTimetable");
 
   if (saveButton) {
     saveButton.hidden = true;
   }
 
-  showMessage(
-    "The timetable preview has been cleared.",
-    "info"
-  );
+  showMessage("The timetable preview has been cleared.", "info");
 }
 
 // =====================================================
@@ -653,8 +604,7 @@ function clearTimetable() {
 
 function loadStoredTimetable() {
   try {
-    const saved =
-      localStorage.getItem("generatedTimetable");
+    const saved = localStorage.getItem("generatedTimetable");
 
     if (!saved) return;
 
@@ -670,8 +620,7 @@ function loadStoredTimetable() {
     displayTimetable(generatedTimetable);
     showSummary(generatedTimetable);
 
-    const saveButton =
-      document.getElementById("saveTimetable");
+    const saveButton = document.getElementById("saveTimetable");
 
     if (saveButton) {
       saveButton.hidden = false;
@@ -683,7 +632,6 @@ function loadStoredTimetable() {
     );
   } catch (error) {
     console.error("Restore Timetable Error:", error);
-
     localStorage.removeItem("generatedTimetable");
   }
 }
@@ -694,10 +642,7 @@ function loadStoredTimetable() {
 
 function exportCSV() {
   if (!generatedTimetable.length) {
-    showMessage(
-      "Generate a timetable before exporting.",
-      "warning"
-    );
+    showMessage("Generate a timetable before exporting.", "warning");
     return;
   }
 
@@ -755,10 +700,7 @@ function exportCSV() {
 
   URL.revokeObjectURL(url);
 
-  showMessage(
-    "The CSV export has been prepared.",
-    "success"
-  );
+  showMessage("The CSV export has been prepared.", "success");
 }
 
 // =====================================================
@@ -766,14 +708,11 @@ function exportCSV() {
 // =====================================================
 
 function showMessage(message, type = "info") {
-  const box =
-    document.getElementById("statusMessage");
+  const box = document.getElementById("statusMessage");
 
   if (!box) return;
 
-  box.className =
-    `alert alert-${type} status-message`;
-
+  box.className = `alert alert-${type} status-message`;
   box.textContent = message;
   box.classList.remove("d-none");
 }
@@ -811,15 +750,10 @@ function normalizeDate(value) {
 function normalizeTime(value) {
   if (!value) return "";
 
-  const match = String(value).match(
-    /^(\d{1,2}):(\d{2})/
-  );
+  const match = String(value).match(/^(\d{1,2}):(\d{2})/);
 
   if (match) {
-    return (
-      `${match[1].padStart(2, "0")}:` +
-      match[2]
-    );
+    return `${match[1].padStart(2, "0")}:${match[2]}`;
   }
 
   return String(value);
@@ -882,18 +816,15 @@ function getDayFromDate(value) {
 // =====================================================
 
 function escapeHTML(value) {
-  return String(value ?? "").replace(
-    /[&<>"']/g,
-    (character) => {
-      const replacements = {
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#39;"
-      };
+  return String(value ?? "").replace(/[&<>"']/g, (character) => {
+    const replacements = {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    };
 
-      return replacements[character];
-    }
-  );
+    return replacements[character];
+  });
 }
