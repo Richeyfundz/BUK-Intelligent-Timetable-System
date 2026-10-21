@@ -1,3 +1,4 @@
+
 // =============================================
 // BUK Intelligent Timetable Management System
 // Faculty Module
@@ -9,17 +10,67 @@ const API_URL =
 let editingFacultyId = null;
 
 // =============================================
+// Authentication
+// =============================================
+
+function getToken() {
+  return localStorage.getItem("token");
+}
+
+function clearSession() {
+  localStorage.removeItem("loggedIn");
+  localStorage.removeItem("username");
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+  window.location.href = "../index.html";
+}
+
+async function apiRequest(url, options = {}) {
+  const token = getToken();
+
+  if (!token || localStorage.getItem("loggedIn") !== "true") {
+    clearSession();
+    throw new Error("Please log in again.");
+  }
+
+  const headers = {
+    ...(options.headers || {}),
+    Authorization: `Bearer ${token}`,
+  };
+
+  if (options.body) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  const response = await fetch(url, {
+    ...options,
+    headers,
+  });
+
+  if (response.status === 401) {
+    clearSession();
+    throw new Error("Your session has expired. Please log in again.");
+  }
+
+  const result = await response.json();
+
+  if (!response.ok || result.success === false) {
+    throw new Error(result.message || "The request failed.");
+  }
+
+  return result;
+}
+
+// =============================================
 // Page Initialization
 // =============================================
 
 document.addEventListener("DOMContentLoaded", function () {
-  // Login Check
-  if (localStorage.getItem("loggedIn") !== "true") {
-    window.location.href = "../index.html";
+  if (localStorage.getItem("loggedIn") !== "true" || !getToken()) {
+    clearSession();
     return;
   }
 
-  // Current Date
   const currentDate = document.getElementById("currentDate");
 
   if (currentDate) {
@@ -31,22 +82,34 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // Load faculties from MySQL
-  loadFaculties();
-
-  // Faculty form
   document
     .getElementById("facultyForm")
     .addEventListener("submit", saveFaculty);
 
-  // Search
   document
     .getElementById("searchFaculty")
     .addEventListener("keyup", searchFaculty);
 
-  // Logout
   document.getElementById("logoutBtn").addEventListener("click", logout);
+
+  loadFaculties();
 });
+
+// =============================================
+// Safe HTML Display
+// =============================================
+
+function escapeHTML(value) {
+  return String(value ?? "").replace(/[&<>"']/g, function (char) {
+    return {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
+    }[char];
+  });
+}
 
 // =============================================
 // Load Faculties
@@ -54,66 +117,57 @@ document.addEventListener("DOMContentLoaded", function () {
 
 async function loadFaculties() {
   try {
-    const response = await fetch(API_URL);
-
-    const result = await response.json();
-
-    if (!result.success) {
-      alert(result.message || "Failed to load faculties.");
-      return;
-    }
-
+    const result = await apiRequest(API_URL);
+    const faculties = Array.isArray(result.data) ? result.data : [];
     const table = document.getElementById("facultyTable");
 
     table.innerHTML = "";
 
-    if (result.data.length === 0) {
+    if (faculties.length === 0) {
       table.innerHTML = `
-                <tr>
-                    <td colspan="4" class="text-center">
-                        No faculties found.
-                    </td>
-                </tr>
-            `;
-
+        <tr>
+          <td colspan="4" class="text-center">
+            No faculties found.
+          </td>
+        </tr>
+      `;
       return;
     }
 
-    result.data.forEach(function (faculty) {
+    faculties.forEach(function (faculty) {
+      const id = Number(faculty.id);
+
+      if (!Number.isInteger(id) || id <= 0) return;
+
       table.innerHTML += `
-                <tr>
+        <tr>
+          <td>${escapeHTML(faculty.faculty_code)}</td>
+          <td>${escapeHTML(faculty.faculty_name)}</td>
+          <td>${escapeHTML(faculty.dean || "")}</td>
+          <td>
+            <button
+              class="btn btn-warning btn-sm me-1"
+              onclick="editFaculty(${id})"
+              aria-label="Edit faculty">
+              <i class="bi bi-pencil-square"></i>
+            </button>
 
-                    <td>${faculty.faculty_code}</td>
-
-                    <td>${faculty.faculty_name}</td>
-
-                    <td>${faculty.dean || ""}</td>
-
-                    <td>
-
-                        <button
-                            class="btn btn-warning btn-sm me-1"
-                            onclick="editFaculty(${faculty.id})"
-                        >
-                            <i class="bi bi-pencil-square"></i>
-                        </button>
-
-                        <button
-                            class="btn btn-danger btn-sm"
-                            onclick="deleteFaculty(${faculty.id})"
-                        >
-                            <i class="bi bi-trash"></i>
-                        </button>
-
-                    </td>
-
-                </tr>
-            `;
+            <button
+              class="btn btn-danger btn-sm"
+              onclick="deleteFaculty(${id})"
+              aria-label="Delete faculty">
+              <i class="bi bi-trash"></i>
+            </button>
+          </td>
+        </tr>
+      `;
     });
   } catch (error) {
-    console.error("Load Faculties Error:", error);
-
-    alert("Unable to connect to the backend server.");
+    if (error.message) {
+      alert(error.message);
+    } else {
+      alert("Unable to connect to the backend server.");
+    }
   }
 }
 
@@ -125,79 +179,44 @@ async function saveFaculty(e) {
   e.preventDefault();
 
   const facultyCode = document.getElementById("facultyCode").value.trim();
-
   const facultyName = document.getElementById("facultyName").value.trim();
-
   const facultyDean = document.getElementById("facultyDean").value.trim();
 
   if (!facultyCode || !facultyName) {
     alert("Faculty Code and Faculty Name are required.");
-
     return;
   }
 
   const facultyData = {
     faculty_code: facultyCode,
-
     faculty_name: facultyName,
-
     dean: facultyDean,
   };
 
   try {
-    let response;
+    const isEditing = editingFacultyId !== null;
 
-    // UPDATE
-    if (editingFacultyId !== null) {
-      response = await fetch(`${API_URL}/${editingFacultyId}`, {
-        method: "PUT",
+    const url = isEditing
+      ? `${API_URL}/${editingFacultyId}`
+      : API_URL;
 
-        headers: {
-          "Content-Type": "application/json",
-        },
+    await apiRequest(url, {
+      method: isEditing ? "PUT" : "POST",
+      body: JSON.stringify(facultyData),
+    });
 
-        body: JSON.stringify(facultyData),
-      });
-    }
+    alert(
+      isEditing
+        ? "Faculty updated successfully."
+        : "Faculty added successfully."
+    );
 
-    // CREATE
-    else {
-      response = await fetch(API_URL, {
-        method: "POST",
-
-        headers: {
-          "Content-Type": "application/json",
-        },
-
-        body: JSON.stringify(facultyData),
-      });
-    }
-
-    const result = await response.json();
-
-    if (!result.success) {
-      alert(result.message || "Operation failed.");
-
-      return;
-    }
-
-    if (editingFacultyId !== null) {
-      alert("Faculty updated successfully.");
-    } else {
-      alert("Faculty added successfully.");
-    }
-
-    // Reset
     editingFacultyId = null;
-
     document.getElementById("facultyForm").reset();
 
-    // Reload database data
-    loadFaculties();
+    await loadFaculties();
   } catch (error) {
-    console.error("Save Faculty Error:", error);
-
-    alert("Unable to connect to the backend server.");
+    alert(error.message || "Unable to connect to the backend server.");
   }
 }
 
@@ -207,35 +226,31 @@ async function saveFaculty(e) {
 
 async function editFaculty(id) {
   try {
-    const response = await fetch(`${API_URL}/${id}`);
+    const result = await apiRequest(`${API_URL}/${id}`);
+    const faculty = result.data;
 
-    const result = await response.json();
-
-    if (!result.success) {
-      alert(result.message || "Faculty not found.");
-
+    if (!faculty) {
+      alert("Faculty not found.");
       return;
     }
 
-    const faculty = result.data;
+    document.getElementById("facultyCode").value =
+      faculty.faculty_code || "";
 
-    document.getElementById("facultyCode").value = faculty.faculty_code;
+    document.getElementById("facultyName").value =
+      faculty.faculty_name || "";
 
-    document.getElementById("facultyName").value = faculty.faculty_name;
-
-    document.getElementById("facultyDean").value = faculty.dean || "";
+    document.getElementById("facultyDean").value =
+      faculty.dean || "";
 
     editingFacultyId = id;
 
-    // Scroll to form
     window.scrollTo({
       top: 0,
       behavior: "smooth",
     });
   } catch (error) {
-    console.error("Edit Faculty Error:", error);
-
-    alert("Unable to connect to the backend server.");
+    alert(error.message || "Unable to connect to the backend server.");
   }
 }
 
@@ -249,25 +264,14 @@ async function deleteFaculty(id) {
   }
 
   try {
-    const response = await fetch(`${API_URL}/${id}`, {
+    await apiRequest(`${API_URL}/${id}`, {
       method: "DELETE",
     });
 
-    const result = await response.json();
-
-    if (!result.success) {
-      alert(result.message || "Failed to delete faculty.");
-
-      return;
-    }
-
     alert("Faculty deleted successfully.");
-
-    loadFaculties();
+    await loadFaculties();
   } catch (error) {
-    console.error("Delete Faculty Error:", error);
-
-    alert("Unable to connect to the backend server.");
+    alert(error.message || "Unable to connect to the backend server.");
   }
 }
 
@@ -276,11 +280,11 @@ async function deleteFaculty(id) {
 // =============================================
 
 function searchFaculty() {
-  const keyword = document.getElementById("searchFaculty").value.toLowerCase();
+  const keyword = document
+    .getElementById("searchFaculty")
+    .value.toLowerCase();
 
-  const rows = document.querySelectorAll("#facultyTable tr");
-
-  rows.forEach(function (row) {
+  document.querySelectorAll("#facultyTable tr").forEach(function (row) {
     row.style.display = row.innerText.toLowerCase().includes(keyword)
       ? ""
       : "none";
@@ -293,14 +297,5 @@ function searchFaculty() {
 
 function logout(e) {
   e.preventDefault();
-
-  localStorage.removeItem("loggedIn");
-
-  localStorage.removeItem("username");
-
-  localStorage.removeItem("token");
-
-  localStorage.removeItem("user");
-
-  window.location.href = "../index.html";
+  clearSession();
 }
