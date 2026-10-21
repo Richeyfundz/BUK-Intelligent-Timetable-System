@@ -1,16 +1,48 @@
+
 const express = require("express");
 const router = express.Router();
 
-const venueController = require("../controllers/venueController");
+const venueController =
+  require("../controllers/venueController");
 
-router.get("/", venueController.getAllVenues);
+const {
+  authenticateToken,
+  requireAdmin,
+} = require("../middleware/authMiddleware");
 
-router.get("/:id", venueController.getVenueById);
+// View venues
+router.get(
+  "/",
+  authenticateToken,
+  venueController.getAllVenues
+);
 
-router.post("/", venueController.createVenue);
+router.get(
+  "/:id",
+  authenticateToken,
+  venueController.getVenueById
+);
 
-router.put("/:id", venueController.updateVenue);
+// Manage venues
+router.post(
+  "/",
+  authenticateToken,
+  requireAdmin,
+  venueController.createVenue
+);
 
-router.delete("/:id", venueController.deleteVenue);
+router.put(
+  "/:id",
+  authenticateToken,
+  requireAdmin,
+  venueController.updateVenue
+);
+
+router.delete(
+  "/:id",
+  authenticateToken,
+  requireAdmin,
+  venueController.deleteVenue
+);
 
 module.exports = router;
