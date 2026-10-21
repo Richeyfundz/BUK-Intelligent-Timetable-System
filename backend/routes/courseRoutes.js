@@ -1,21 +1,21 @@
+
 const express = require("express");
 const router = express.Router();
 
 const courseController = require("../controllers/courseController");
 
-// Get all courses
-router.get("/", courseController.getAllCourses);
+const {
+  authenticateToken,
+  requireAdmin,
+} = require("../middleware/authMiddleware");
 
-// Get course by ID
-router.get("/:id", courseController.getCourseById);
+// View courses: active authenticated users
+router.get("/", authenticateToken, courseController.getAllCourses);
+router.get("/:id", authenticateToken, courseController.getCourseById);
 
-// Create course
-router.post("/", courseController.createCourse);
-
-// Update course
-router.put("/:id", courseController.updateCourse);
-
-// Delete course
-router.delete("/:id", courseController.deleteCourse);
+// Manage courses: administrators only
+router.post("/", authenticateToken, requireAdmin, courseController.createCourse);
+router.put("/:id", authenticateToken, requireAdmin, courseController.updateCourse);
+router.delete("/:id", authenticateToken, requireAdmin, courseController.deleteCourse);
 
 module.exports = router;
