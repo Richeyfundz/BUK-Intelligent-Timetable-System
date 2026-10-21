@@ -5,7 +5,15 @@ const router = express.Router();
 const timetableController =
   require("../controllers/timetableController");
 
-// Retrieve saved timetable records.
-router.get("/", timetableController.getTimetables);
+const {
+  authenticateToken,
+} = require("../middleware/authMiddleware");
+
+// Retrieve saved timetable records
+router.get(
+  "/",
+  authenticateToken,
+  timetableController.getTimetables
+);
 
 module.exports = router;
