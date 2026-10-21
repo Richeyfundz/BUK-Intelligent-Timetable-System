@@ -1,9 +1,9 @@
+
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>Settings | BUK ITMS</title>
 
@@ -272,6 +272,7 @@
                   class="form-control"
                   autocomplete="new-password"
                   placeholder="Leave blank to keep unchanged">
+
                 <small class="text-muted">
                   For a new user, enter a password.
                   For an existing user, blank keeps it unchanged.
@@ -327,6 +328,7 @@
         <div class="card-body">
           <p>
             Export locally stored timetable data as a JSON backup.
+            This does not export the complete database.
           </p>
 
           <button type="button" id="backupBtn"
@@ -375,313 +377,382 @@
 </div>
 
 <script>
-  const API_BASE =
-    "https://buk-intelligent-timetable-system-production.up.railway.app/api";
-  const USERS_API = `${API_BASE}/users`;
+"use strict";
 
-  const sidebar = document.getElementById("sidebar");
-  const openBtn = document.getElementById("sidebarOpen");
-  const closeBtn = document.getElementById("sidebarClose");
-  const overlay = document.getElementById("sidebarOverlay");
+const API_BASE =
+  "https://buk-intelligent-timetable-system-production.up.railway.app/api";
 
-  const userSelect = document.getElementById("userSelect");
-  const userForm = document.getElementById("userForm");
-  const userMessage = document.getElementById("userMessage");
+const USERS_API = `${API_BASE}/users`;
 
-  let users = [];
+const sidebar = document.getElementById("sidebar");
+const openBtn = document.getElementById("sidebarOpen");
+const closeBtn = document.getElementById("sidebarClose");
+const overlay = document.getElementById("sidebarOverlay");
+const userSelect = document.getElementById("userSelect");
+const userForm = document.getElementById("userForm");
+const userMessage = document.getElementById("userMessage");
+const saveUserBtn = document.getElementById("saveUserBtn");
 
-  document.getElementById("currentDate").textContent =
-    new Date().toLocaleDateString();
+let users = [];
 
-  function openSidebar() {
-    sidebar.classList.add("sidebar-open");
-    overlay.classList.add("show");
-    openBtn.setAttribute("aria-expanded", "true");
+document.getElementById("currentDate").textContent =
+  new Date().toLocaleDateString();
+
+/* Authentication */
+
+function clearSession() {
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+  localStorage.removeItem("loggedIn");
+  localStorage.removeItem("username");
+}
+
+function requireLogin() {
+  const token = localStorage.getItem("token");
+  const loggedIn = localStorage.getItem("loggedIn") === "true";
+
+  if (!token || !loggedIn) {
+    clearSession();
+    window.location.replace("../index.html");
+    return false;
   }
 
-  function closeSidebar() {
-    sidebar.classList.remove("sidebar-open");
-    overlay.classList.remove("show");
-    openBtn.setAttribute("aria-expanded", "false");
+  return true;
+}
+
+async function apiRequest(url, options = {}) {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    clearSession();
+    window.location.replace("../index.html");
+    throw new Error("Your session has expired. Please log in again.");
   }
 
-  openBtn.addEventListener("click", openSidebar);
-  closeBtn.addEventListener("click", closeSidebar);
-  overlay.addEventListener("click", closeSidebar);
+  const headers = {
+    ...(options.headers || {}),
+    Authorization: `Bearer ${token}`
+  };
 
-  document.addEventListener("keydown", function(event) {
-    if (event.key === "Escape") closeSidebar();
+  if (options.body) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  const response = await fetch(url, {
+    ...options,
+    headers
   });
 
-  document.querySelectorAll("#sidebar a").forEach(function(link) {
-    link.addEventListener("click", closeSidebar);
-  });
+  const text = await response.text();
+  let result = {};
 
-  document.getElementById("logoutBtn")
-    .addEventListener("click", function() {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      localStorage.removeItem("loggedIn");
-      localStorage.removeItem("username");
-    });
-
-  function showMessage(message, type = "info") {
-    userMessage.className = `alert alert-${type}`;
-    userMessage.textContent = message;
-  }
-
-  function clearMessage() {
-    userMessage.className = "alert d-none";
-    userMessage.textContent = "";
-  }
-
-  function getList(result) {
-    if (Array.isArray(result)) return result;
-    if (Array.isArray(result.data)) return result.data;
-    if (Array.isArray(result.users)) return result.users;
-    return [];
-  }
-
-  function readField(user, ...keys) {
-    for (const key of keys) {
-      if (user[key] !== undefined && user[key] !== null) {
-        return user[key];
-      }
+  if (text) {
+    try {
+      result = JSON.parse(text);
+    } catch {
+      result = { message: text };
     }
-    return "";
   }
 
-  async function loadUsers(selectedId = "") {
+  if (response.status === 401) {
+    clearSession();
+    window.location.replace("../index.html");
+    throw new Error("Your session has expired. Please log in again.");
+  }
+
+  if (!response.ok || result.success === false) {
+    throw new Error(
+      result.message ||
+      `Request failed with status ${response.status}.`
+    );
+  }
+
+  return result;
+}
+
+/* Sidebar controls */
+
+function openSidebar() {
+  sidebar.classList.add("sidebar-open");
+  overlay.classList.add("show");
+  openBtn.setAttribute("aria-expanded", "true");
+}
+
+function closeSidebar() {
+  sidebar.classList.remove("sidebar-open");
+  overlay.classList.remove("show");
+  openBtn.setAttribute("aria-expanded", "false");
+}
+
+openBtn.addEventListener("click", openSidebar);
+closeBtn.addEventListener("click", closeSidebar);
+overlay.addEventListener("click", closeSidebar);
+
+document.addEventListener("keydown", function(event) {
+  if (event.key === "Escape") closeSidebar();
+});
+
+document.querySelectorAll("#sidebar a").forEach(function(link) {
+  link.addEventListener("click", closeSidebar);
+});
+
+document.getElementById("logoutBtn").addEventListener("click", function() {
+  clearSession();
+});
+
+/* User messages */
+
+function showMessage(message, type = "info") {
+  userMessage.className = `alert alert-${type}`;
+  userMessage.textContent = message;
+}
+
+function clearMessage() {
+  userMessage.className = "alert d-none";
+  userMessage.textContent = "";
+}
+
+function getList(result) {
+  if (Array.isArray(result)) return result;
+  if (Array.isArray(result.data)) return result.data;
+  if (Array.isArray(result.users)) return result.users;
+  return [];
+}
+
+/* Load users */
+
+async function loadUsers(selectedId = "") {
+  userSelect.innerHTML =
+    '<option value="">Loading users...</option>';
+
+  try {
+    const result = await apiRequest(USERS_API);
+    users = getList(result);
+
     userSelect.innerHTML =
-      '<option value="">Loading users...</option>';
+      '<option value="">-- Select a user --</option>';
 
-    try {
-      const response = await fetch(USERS_API);
-      const result = await response.json();
+    users.forEach(function(user) {
+      const option = document.createElement("option");
+      option.value = user.id;
+      option.textContent =
+        `${user.username || "User"} - ${user.full_name || ""}`;
 
-      if (!response.ok || result.success === false) {
-        throw new Error(result.message || "Could not load users.");
-      }
-
-      users = getList(result);
-      userSelect.innerHTML =
-        '<option value="">-- Select a user --</option>';
-
-      users.forEach(function(user) {
-        const option = document.createElement("option");
-        option.value = user.id;
-        option.textContent =
-          `${user.username || "User"} - ` +
-          `${user.full_name || user.fullName || user.username || ""}`;
-
-        userSelect.appendChild(option);
-      });
-
-      if (selectedId) {
-        userSelect.value = String(selectedId);
-        loadSelectedUser();
-      }
-
-      if (users.length === 0) {
-        showMessage("No users were returned by the API.", "warning");
-      } else {
-        clearMessage();
-      }
-    } catch (error) {
-      console.error("Load users error:", error);
-      userSelect.innerHTML =
-        '<option value="">Unable to load users</option>';
-
-      showMessage(
-        "Could not load users from the server. Check the API and connection.",
-        "danger"
-      );
-    }
-  }
-
-  function loadSelectedUser() {
-    const user = users.find(function(item) {
-      return String(item.id) === String(userSelect.value);
+      userSelect.appendChild(option);
     });
 
-    if (!user) return;
+    if (selectedId) {
+      userSelect.value = String(selectedId);
+      loadSelectedUser();
+    }
 
-    document.getElementById("userId").value = user.id;
-    document.getElementById("username").value =
-      readField(user, "username");
-    document.getElementById("fullName").value =
-      readField(user, "full_name", "fullName");
-    document.getElementById("email").value =
-      readField(user, "email");
-    document.getElementById("password").value = "";
-    document.getElementById("role").value =
-      readField(user, "role") || "Staff";
-    document.getElementById("status").value =
-      readField(user, "status") || "Active";
+    if (users.length === 0) {
+      showMessage("No users were returned by the API.", "warning");
+    } else {
+      clearMessage();
+    }
+  } catch (error) {
+    console.error("Load users error:", error);
 
-    document.getElementById("saveUserBtn").innerHTML =
-      '<i class="bi bi-save"></i> Update User';
-    clearMessage();
+    userSelect.innerHTML =
+      '<option value="">Unable to load users</option>';
+
+    showMessage(
+      error.message || "Could not load users from the server.",
+      "danger"
+    );
   }
+}
 
-  function startNewUser() {
-    userForm.reset();
-    document.getElementById("userId").value = "";
-    userSelect.value = "";
-    document.getElementById("role").value = "Staff";
-    document.getElementById("status").value = "Active";
+/* Select an existing user */
 
-    document.getElementById("saveUserBtn").innerHTML =
-      '<i class="bi bi-person-plus"></i> Create User';
-
-    clearMessage();
-  }
-
-  userSelect.addEventListener("change", loadSelectedUser);
-
-  document.getElementById("newUserBtn")
-    .addEventListener("click", startNewUser);
-
-  document.getElementById("reloadUsersBtn")
-    .addEventListener("click", function() {
-      loadUsers(userSelect.value);
-    });
-
-  userForm.addEventListener("submit", async function(event) {
-    event.preventDefault();
-    clearMessage();
-
-    const id = document.getElementById("userId").value;
-    const password =
-      document.getElementById("password").value.trim();
-
-    const userData = {
-      username: document.getElementById("username").value.trim(),
-      full_name: document.getElementById("fullName").value.trim(),
-      email: document.getElementById("email").value.trim(),
-      role: document.getElementById("role").value,
-      status: document.getElementById("status").value
-    };
-
-    if (password) userData.password = password;
-
-    if (!userData.username ||
-        !userData.full_name ||
-        !userData.email) {
-      showMessage("Complete all required user fields.", "warning");
-      return;
-    }
-
-    if (!id && !password) {
-      showMessage(
-        "Enter a password when creating a new user.",
-        "warning"
-      );
-      return;
-    }
-
-    const saveButton = document.getElementById("saveUserBtn");
-    saveButton.disabled = true;
-
-    try {
-      const response = await fetch(
-        id ? `${USERS_API}/${encodeURIComponent(id)}` : USERS_API,
-        {
-          method: id ? "PUT" : "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(userData)
-        }
-      );
-
-      const result = await response.json();
-
-      if (!response.ok || result.success === false) {
-        throw new Error(result.message || "User could not be saved.");
-      }
-
-      showMessage(
-        id ? "User updated successfully." :
-             "User created successfully.",
-        "success"
-      );
-
-      await loadUsers(id || "");
-      if (!id) startNewUser();
-    } catch (error) {
-      console.error("Save user error:", error);
-      showMessage(
-        error.message || "Could not save the user.",
-        "danger"
-      );
-    } finally {
-      saveButton.disabled = false;
-    }
+function loadSelectedUser() {
+  const user = users.find(function(item) {
+    return String(item.id) === String(userSelect.value);
   });
 
-  document.getElementById("backupBtn")
-    .addEventListener("click", function() {
-      const keys = [
-        "faculties",
-        "departments",
-        "courses",
-        "lecturers",
-        "students",
-        "venues",
-        "generatedTimetable",
-        "examTimetable"
-      ];
+  if (!user) return;
 
-      const backup = {
-        system: "BUK ITMS",
-        createdAt: new Date().toISOString(),
-        data: {}
-      };
+  document.getElementById("userId").value = user.id;
+  document.getElementById("username").value = user.username || "";
+  document.getElementById("fullName").value = user.full_name || "";
+  document.getElementById("email").value = user.email || "";
+  document.getElementById("password").value = "";
+  document.getElementById("role").value = user.role || "Staff";
+  document.getElementById("status").value = user.status || "Active";
 
-      keys.forEach(function(key) {
-        const value = localStorage.getItem(key);
-        if (value !== null) backup.data[key] = value;
-      });
+  saveUserBtn.innerHTML =
+    '<i class="bi bi-save"></i> Update User';
 
-      const blob = new Blob(
-        [JSON.stringify(backup, null, 2)],
-        { type: "application/json" }
-      );
+  clearMessage();
+}
 
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
+function startNewUser() {
+  userForm.reset();
 
-      link.href = url;
-      link.download = "BUK_ITMS_Backup.json";
-      link.click();
+  document.getElementById("userId").value = "";
+  userSelect.value = "";
+  document.getElementById("role").value = "Staff";
+  document.getElementById("status").value = "Active";
 
-      URL.revokeObjectURL(url);
-    });
+  saveUserBtn.innerHTML =
+    '<i class="bi bi-person-plus"></i> Create User';
 
-  document.getElementById("clearBtn")
-    .addEventListener("click", function() {
-      if (!confirm(
-        "Clear locally stored timetable data? This will not delete database records."
-      )) return;
+  clearMessage();
+}
 
-      [
-        "faculties",
-        "departments",
-        "courses",
-        "lecturers",
-        "students",
-        "venues",
-        "generatedTimetable",
-        "examTimetable"
-      ].forEach(function(key) {
-        localStorage.removeItem(key);
-      });
+userSelect.addEventListener("change", loadSelectedUser);
 
-      alert("Local timetable data cleared.");
-    });
+document.getElementById("newUserBtn").addEventListener(
+  "click",
+  startNewUser
+);
 
+document.getElementById("reloadUsersBtn").addEventListener(
+  "click",
+  function() {
+    loadUsers(userSelect.value);
+  }
+);
+
+/* Create or update a user */
+
+userForm.addEventListener("submit", async function(event) {
+  event.preventDefault();
+  clearMessage();
+
+  const id = document.getElementById("userId").value.trim();
+  const password = document.getElementById("password").value;
+
+  const userData = {
+    username: document.getElementById("username").value.trim(),
+    full_name: document.getElementById("fullName").value.trim(),
+    email: document.getElementById("email").value.trim(),
+    role: document.getElementById("role").value,
+    status: document.getElementById("status").value
+  };
+
+  if (id) {
+    userData.id = Number(id);
+  }
+
+  if (password.trim()) {
+    userData.password = password;
+  }
+
+  if (!userData.username || !userData.full_name || !userData.email) {
+    showMessage("Complete all required user fields.", "warning");
+    return;
+  }
+
+  if (!id && !password.trim()) {
+    showMessage(
+      "Enter a password when creating a new user.",
+      "warning"
+    );
+    return;
+  }
+
+  saveUserBtn.disabled = true;
+
+  try {
+    const result = await apiRequest(
+      id ? `${USERS_API}/${encodeURIComponent(id)}` : USERS_API,
+      {
+        method: id ? "PUT" : "POST",
+        body: JSON.stringify(userData)
+      }
+    );
+
+    showMessage(
+      result.message ||
+        (id ? "User updated successfully." : "User created successfully."),
+      "success"
+    );
+
+    await loadUsers(id || "");
+
+    if (!id) startNewUser();
+  } catch (error) {
+    console.error("Save user error:", error);
+    showMessage(error.message || "Could not save the user.", "danger");
+  } finally {
+    saveUserBtn.disabled = false;
+  }
+});
+
+/* Export locally stored data */
+
+document.getElementById("backupBtn").addEventListener("click", function() {
+  const keys = [
+    "faculties",
+    "departments",
+    "courses",
+    "lecturers",
+    "students",
+    "venues",
+    "generatedTimetable",
+    "examTimetable"
+  ];
+
+  const backup = {
+    system: "BUK ITMS",
+    createdAt: new Date().toISOString(),
+    data: {}
+  };
+
+  keys.forEach(function(key) {
+    const value = localStorage.getItem(key);
+    if (value !== null) backup.data[key] = value;
+  });
+
+  const blob = new Blob(
+    [JSON.stringify(backup, null, 2)],
+    { type: "application/json" }
+  );
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = "BUK_ITMS_Backup.json";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+
+  URL.revokeObjectURL(url);
+});
+
+/* Clear selected local data only */
+
+document.getElementById("clearBtn").addEventListener("click", function() {
+  if (!confirm(
+    "Clear locally stored timetable data? This will not delete database records."
+  )) {
+    return;
+  }
+
+  [
+    "faculties",
+    "departments",
+    "courses",
+    "lecturers",
+    "students",
+    "venues",
+    "generatedTimetable",
+    "examTimetable"
+  ].forEach(function(key) {
+    localStorage.removeItem(key);
+  });
+
+  alert("Local timetable data cleared.");
+});
+
+/* Start page */
+
+if (requireLogin()) {
   loadUsers();
+}
 </script>
 </body>
 </html>
