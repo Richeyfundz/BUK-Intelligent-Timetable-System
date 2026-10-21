@@ -1,20 +1,84 @@
+
+ // =============================================
+ // BUK Intelligent Timetable Management System
+ // Courses Module - Railway API Version
+ // =============================================
+
+const API_BASE_URL =
+  "https://buk-intelligent-timetable-system-production.up.railway.app/api";
+
+const API_URL = `${API_BASE_URL}/courses`;
+const DEPARTMENT_API_URL = `${API_BASE_URL}/departments`;
+
 // =============================================
-// BUK Intelligent Timetable Management System
-// Courses Module - Railway API Version
+// AUTHENTICATION HELPERS
 // =============================================
 
-const API_URL =
-  "https://buk-intelligent-timetable-system-production.up.railway.app/api/courses";
+function getToken() {
+  return localStorage.getItem("token");
+}
 
-const DEPARTMENT_API_URL =
-  "https://buk-intelligent-timetable-system-production.up.railway.app/api/departments";
+function getRequestOptions(options = {}) {
+  const token = getToken();
+
+  return {
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  };
+}
+
+async function apiRequest(url, options = {}) {
+  if (!getToken()) {
+    clearSession();
+    window.location.href = "../index.html";
+    throw new Error("Your session has expired. Please log in again.");
+  }
+
+  const response = await fetch(url, getRequestOptions(options));
+
+  if (response.status === 401) {
+    clearSession();
+    window.location.href = "../index.html";
+    throw new Error("Your session has expired. Please log in again.");
+  }
+
+  const result = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(
+      result.message || `Request failed (${response.status})`
+    );
+  }
+
+  return result;
+}
+
+function clearSession() {
+  localStorage.removeItem("loggedIn");
+  localStorage.removeItem("username");
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+}
+
+function getDataArray(result) {
+  if (Array.isArray(result)) return result;
+  if (result && Array.isArray(result.data)) return result.data;
+  return [];
+}
 
 // =============================================
 // PAGE INITIALIZATION
 // =============================================
 
 document.addEventListener("DOMContentLoaded", function () {
-  if (localStorage.getItem("loggedIn") !== "true") {
+  if (
+    localStorage.getItem("loggedIn") !== "true" ||
+    !getToken()
+  ) {
+    clearSession();
     window.location.href = "../index.html";
     return;
   }
@@ -36,13 +100,13 @@ document.addEventListener("DOMContentLoaded", function () {
   const courseForm = document.getElementById("courseForm");
 
   if (courseForm) {
-    courseForm.addEventListener("submit", saveCourse);
+    courseForm.addEventListener("submit", handleCourseSubmit);
   }
 
   const searchInput = document.getElementById("searchCourse");
 
   if (searchInput) {
-    searchInput.addEventListener("keyup", searchCourse);
+    searchInput.addEventListener("input", searchCourse);
   }
 
   const logoutBtn = document.getElementById("logoutBtn");
@@ -62,45 +126,33 @@ async function loadDepartments() {
   if (!departmentSelect) return;
 
   try {
-    const response = await fetch(DEPARTMENT_API_URL);
+    const result = await apiRequest(DEPARTMENT_API_URL);
+    const departments = getDataArray(result);
 
-    if (!response.ok) {
-      throw new Error("Failed to load departments");
-    }
-
-    const result = await response.json();
-
-    const departments = result.data || result;
-
-    departmentSelect.innerHTML = '<option value="">Select Department</option>';
+    departmentSelect.innerHTML =
+      '<option value="">Select Department</option>';
 
     departments.forEach((department) => {
-  const option = document.createElement("option");
+      const option = document.createElement("option");
 
-  option.value = department.id;
-  option.textContent = department.department_name;
+      option.value = department.id;
+      option.textContent = department.department_name;
 
-  departmentSelect.appendChild(option);
-});
-
-console.log(
-  "Department options loaded:",
-  Array.from(departmentSelect.options).map((option) => ({
-    text: option.textContent.trim(),
-    value: option.value,
-  }))
-);
+      departmentSelect.appendChild(option);
+    });
   } catch (error) {
     console.error("Department loading error:", error);
   }
 }
 
 // =============================================
-// SAVE COURSE
+// HANDLE COURSE FORM
 // =============================================
 
-async function saveCourse(e) {
+async function handleCourseSubmit(e) {
   e.preventDefault();
+
+  const form = e.currentTarget;
 
   const courseCode = document.getElementById("courseCode").value.trim();
   const courseTitle = document.getElementById("courseTitle").value.trim();
@@ -108,56 +160,60 @@ async function saveCourse(e) {
   const courseLevel = document.getElementById("courseLevel").value;
 
   const departmentElement = document.getElementById("courseDepartment");
-
   const semesterElement = document.getElementById("courseSemester");
 
   if (!courseCode || !courseTitle || !courseUnit || !courseLevel) {
     alert("Please fill in all required course information.");
     return;
   }
-console.log("Course form values:", {
-  courseCode,
-  courseTitle,
-  courseUnit,
-  courseLevel,
-  departmentId: departmentElement?.value,
-  semester: semesterElement?.value,
-});
+
   const course = {
     course_code: courseCode,
     course_title: courseTitle,
     course_unit: courseUnit,
     level: courseLevel,
-    department_id: departmentElement ? departmentElement.value : null,
-    semester: semesterElement ? semesterElement.value : "First",
+    department_id: departmentElement?.value || null,
+    semester: semesterElement?.value || "First",
   };
 
+  const editId = form.dataset.editId;
+  const submitButton = form.querySelector('button[type="submit"]');
+
+  if (submitButton) submitButton.disabled = true;
+
   try {
-    const response = await fetch(API_URL, {
-      method: "POST",
+    const result = await apiRequest(
+      editId ? `${API_URL}/${editId}` : API_URL,
+      {
+        method: editId ? "PUT" : "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(course),
+      }
+    );
 
-      headers: {
-        "Content-Type": "application/json",
-      },
+    alert(
+      result.message ||
+        (editId
+          ? "Course updated successfully."
+          : "Course saved successfully.")
+    );
 
-      body: JSON.stringify(course),
-    });
+    form.reset();
+    delete form.dataset.editId;
 
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.message || "Failed to save course");
+    if (submitButton) {
+      submitButton.innerHTML =
+        '<i class="bi bi-save"></i> Save Course';
     }
-
-    alert("Course saved successfully.");
-
-    document.getElementById("courseForm").reset();
 
     await loadCourses();
   } catch (error) {
     console.error("Save course error:", error);
-
     alert("Unable to save course: " + error.message);
+  } finally {
+    if (submitButton) submitButton.disabled = false;
   }
 }
 
@@ -172,68 +228,57 @@ async function loadCourses() {
 
   table.innerHTML = `
     <tr>
-      <td colspan="6" class="text-center">
-        Loading courses...
-      </td>
+      <td colspan="6" class="text-center">Loading courses...</td>
     </tr>
   `;
 
   try {
-    const response = await fetch(API_URL);
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.message || "Failed to load courses");
-    }
-
-    const courses = result.data || result;
+    const result = await apiRequest(API_URL);
+    const courses = getDataArray(result);
 
     table.innerHTML = "";
 
-    if (!courses || courses.length === 0) {
+    if (courses.length === 0) {
       table.innerHTML = `
         <tr>
-          <td colspan="6" class="text-center">
-            No courses found.
-          </td>
+          <td colspan="6" class="text-center">No courses found.</td>
         </tr>
       `;
       return;
     }
 
-    courses.forEach(function (course) {
-      table.innerHTML += `
-        <tr>
-          <td>${course.course_code || ""}</td>
+    courses.forEach((course) => {
+      const row = document.createElement("tr");
 
-          <td>${course.course_title || ""}</td>
+      [
+        course.course_code,
+        course.course_title,
+        course.course_unit,
+        course.level,
+        course.semester,
+      ].forEach((value) => {
+        const cell = document.createElement("td");
+        cell.textContent = value ?? "";
+        row.appendChild(cell);
+      });
 
-          <td>${course.course_unit || ""}</td>
+      const actions = document.createElement("td");
 
-          <td>${course.level || ""}</td>
+      const editButton = document.createElement("button");
+      editButton.className = "btn btn-warning btn-sm me-1";
+      editButton.title = "Edit Course";
+      editButton.innerHTML = '<i class="bi bi-pencil-square"></i>';
+      editButton.addEventListener("click", () => editCourse(course.id));
 
-          <td>${course.semester || ""}</td>
+      const deleteButton = document.createElement("button");
+      deleteButton.className = "btn btn-danger btn-sm";
+      deleteButton.title = "Delete Course";
+      deleteButton.innerHTML = '<i class="bi bi-trash"></i>';
+      deleteButton.addEventListener("click", () => deleteCourse(course.id));
 
-          <td>
-            <button
-              class="btn btn-warning btn-sm"
-              onclick="editCourse(${course.id})"
-              title="Edit Course"
-            >
-              <i class="bi bi-pencil-square"></i>
-            </button>
-
-            <button
-              class="btn btn-danger btn-sm"
-              onclick="deleteCourse(${course.id})"
-              title="Delete Course"
-            >
-              <i class="bi bi-trash"></i>
-            </button>
-          </td>
-        </tr>
-      `;
+      actions.append(editButton, deleteButton);
+      row.appendChild(actions);
+      table.appendChild(row);
     });
   } catch (error) {
     console.error("Load courses error:", error);
@@ -241,38 +286,10 @@ async function loadCourses() {
     table.innerHTML = `
       <tr>
         <td colspan="6" class="text-center text-danger">
-          Unable to load courses.
+          Unable to load courses: ${escapeHTML(error.message)}
         </td>
       </tr>
     `;
-  }
-}
-
-// =============================================
-// DELETE COURSE
-// =============================================
-
-async function deleteCourse(id) {
-  if (!confirm("Delete this Course?")) return;
-
-  try {
-    const response = await fetch(`${API_URL}/${id}`, {
-      method: "DELETE",
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.message || "Failed to delete course");
-    }
-
-    alert("Course deleted successfully.");
-
-    await loadCourses();
-  } catch (error) {
-    console.error("Delete course error:", error);
-
-    alert("Unable to delete course: " + error.message);
   }
 }
 
@@ -282,123 +299,68 @@ async function deleteCourse(id) {
 
 async function editCourse(id) {
   try {
-    const response = await fetch(`${API_URL}/${id}`);
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.message || "Failed to load course");
-    }
-
+    const result = await apiRequest(`${API_URL}/${id}`);
     const course = result.data || result;
 
-    document.getElementById("courseCode").value = course.course_code || "";
+    document.getElementById("courseCode").value =
+      course.course_code || "";
 
-    document.getElementById("courseTitle").value = course.course_title || "";
+    document.getElementById("courseTitle").value =
+      course.course_title || "";
 
-    document.getElementById("courseUnit").value = course.course_unit || "";
+    document.getElementById("courseUnit").value =
+      course.course_unit || "";
 
-    document.getElementById("courseLevel").value = course.level || "";
+    document.getElementById("courseLevel").value =
+      course.level || "";
 
     const departmentElement = document.getElementById("courseDepartment");
+    const semesterElement = document.getElementById("courseSemester");
 
     if (departmentElement) {
       departmentElement.value = course.department_id || "";
     }
-
-    const semesterElement = document.getElementById("courseSemester");
 
     if (semesterElement) {
       semesterElement.value = course.semester || "First";
     }
 
     const form = document.getElementById("courseForm");
-
     form.dataset.editId = id;
 
     const submitButton = form.querySelector('button[type="submit"]');
 
     if (submitButton) {
-      submitButton.innerHTML = '<i class="bi bi-save"></i> Update Course';
+      submitButton.innerHTML =
+        '<i class="bi bi-save"></i> Update Course';
     }
+
+    form.scrollIntoView({ behavior: "smooth", block: "start" });
   } catch (error) {
     console.error("Edit course error:", error);
-
     alert("Unable to load course: " + error.message);
   }
 }
 
 // =============================================
-// UPDATE COURSE
+// DELETE COURSE
 // =============================================
 
-async function updateCourse(id, course) {
+async function deleteCourse(id) {
+  if (!confirm("Delete this course?")) return;
+
   try {
-    const response = await fetch(`${API_URL}/${id}`, {
-      method: "PUT",
-
-      headers: {
-        "Content-Type": "application/json",
-      },
-
-      body: JSON.stringify(course),
+    const result = await apiRequest(`${API_URL}/${id}`, {
+      method: "DELETE",
     });
 
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.message || "Failed to update course");
-    }
-
-    alert("Course updated successfully.");
-
-    document.getElementById("courseForm").reset();
-
-    delete document.getElementById("courseForm").dataset.editId;
-
+    alert(result.message || "Course deleted successfully.");
     await loadCourses();
   } catch (error) {
-    console.error("Update course error:", error);
-
-    alert("Unable to update course: " + error.message);
+    console.error("Delete course error:", error);
+    alert("Unable to delete course: " + error.message);
   }
 }
-
-// =============================================
-// HANDLE FORM UPDATE
-// =============================================
-
-document.addEventListener("submit", function (e) {
-  if (e.target.id !== "courseForm") return;
-
-  const form = e.target;
-
-  const editId = form.dataset.editId;
-
-  if (!editId) return;
-
-  e.preventDefault();
-
-  const departmentElement = document.getElementById("courseDepartment");
-
-  const semesterElement = document.getElementById("courseSemester");
-
-  const course = {
-    course_code: document.getElementById("courseCode").value.trim(),
-
-    course_title: document.getElementById("courseTitle").value.trim(),
-
-    course_unit: document.getElementById("courseUnit").value,
-
-    level: document.getElementById("courseLevel").value,
-
-    department_id: departmentElement ? departmentElement.value : null,
-
-    semester: semesterElement ? semesterElement.value : "First",
-  };
-
-  updateCourse(editId, course);
-});
 
 // =============================================
 // SEARCH COURSE
@@ -410,13 +372,30 @@ function searchCourse() {
   if (!searchInput) return;
 
   const keyword = searchInput.value.toLowerCase();
-
   const rows = document.querySelectorAll("#courseTable tr");
 
-  rows.forEach(function (row) {
-    row.style.display = row.innerText.toLowerCase().includes(keyword)
+  rows.forEach((row) => {
+    row.style.display = row.textContent.toLowerCase().includes(keyword)
       ? ""
       : "none";
+  });
+}
+
+// =============================================
+// SAFE HTML FOR ERROR MESSAGES
+// =============================================
+
+function escapeHTML(value) {
+  return String(value).replace(/[&<>"']/g, (character) => {
+    const entities = {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
+    };
+
+    return entities[character];
   });
 }
 
@@ -425,12 +404,10 @@ function searchCourse() {
 // =============================================
 
 function logout(e) {
-  e.preventDefault();
+  if (e) e.preventDefault();
 
-  localStorage.removeItem("loggedIn");
-  localStorage.removeItem("username");
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
-
-  window.location.href = "../index.html";
+  if (confirm("Are you sure you want to logout?")) {
+    clearSession();
+    window.location.href = "../index.html";
+  }
 }
