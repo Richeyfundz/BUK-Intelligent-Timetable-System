@@ -1,13 +1,37 @@
-const express = require("express");
 
+const express = require("express");
 const router = express.Router();
 
-const examTimetableController = require("../controllers/exam-timetableController");
+const examTimetableController =
+  require("../controllers/exam-timetableController");
 
-router.post("/generate", examTimetableController.generateExamTimetable);
+const {
+  authenticateToken,
+  requireAdmin,
+} = require("../middleware/authMiddleware");
 
-router.post("/save", examTimetableController.saveExamTimetable);
+// Generate exam timetable
+router.post(
+  "/generate",
+  authenticateToken,
+  requireAdmin,
+  examTimetableController.generateExamTimetable
+);
 
-router.delete("/clear", examTimetableController.clearExamTimetable);
+// Save exam timetable
+router.post(
+  "/save",
+  authenticateToken,
+  requireAdmin,
+  examTimetableController.saveExamTimetable
+);
+
+// Clear exam timetable
+router.delete(
+  "/clear",
+  authenticateToken,
+  requireAdmin,
+  examTimetableController.clearExamTimetable
+);
 
 module.exports = router;
