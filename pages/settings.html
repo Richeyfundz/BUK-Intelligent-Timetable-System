@@ -5,14 +5,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Settings | BUK ITMS</title>
+  <title>Settings | BUK Intelligent Timetable Management System</title>
 
   <link
     href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
     rel="stylesheet">
+
   <link
     href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
     rel="stylesheet">
+
   <link rel="stylesheet" href="../css/style.css">
 
   <style>
@@ -32,13 +34,6 @@
         overflow-x: clip;
       }
 
-      #sidebarOpen {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-      }
-
       #sidebar {
         position: fixed;
         top: 0;
@@ -55,6 +50,13 @@
 
       #sidebar.sidebar-open {
         transform: translateX(0);
+      }
+
+      #sidebarOpen {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
       }
 
       #sidebarClose {
@@ -90,13 +92,14 @@
       .topbar {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
         width: 100%;
         min-width: 0;
       }
 
       .topbar h3 {
         font-size: 1.15rem;
+        margin-bottom: 3px;
       }
 
       .container-fluid {
@@ -107,8 +110,8 @@
       }
 
       .card {
-        min-width: 0;
         max-width: 100%;
+        min-width: 0;
       }
     }
   </style>
@@ -117,85 +120,127 @@
 <body>
 <div class="wrapper">
 
+  <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebar">
+
     <div class="sidebar-header text-center">
-      <button type="button" id="sidebarClose"
+
+      <button
+        type="button"
+        id="sidebarClose"
         class="btn btn-light btn-sm"
         aria-label="Close navigation">
         <i class="bi bi-x-lg"></i>
       </button>
 
-      <img src="../buk-logo.png.JPG"
-        class="sidebar-logo" alt="BUK Logo">
+      <img
+        src="../buk-logo.png.JPG"
+        class="sidebar-logo"
+        alt="BUK Logo">
 
       <h4 class="mt-3">BUK ITMS</h4>
       <small>Intelligent Timetable System</small>
     </div>
 
     <ul class="sidebar-menu">
-      <li><a href="dashboard.html">
-        <i class="bi bi-speedometer2"></i> Dashboard
-      </a></li>
 
-      <li><a href="faculty.html">
-        <i class="bi bi-building"></i> Faculties
-      </a></li>
+      <li>
+        <a href="dashboard.html">
+          <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
+      </li>
 
-      <li><a href="departments.html">
-        <i class="bi bi-building"></i> Departments
-      </a></li>
+      <li>
+        <a href="faculty.html">
+          <i class="bi bi-building"></i> Faculties
+        </a>
+      </li>
 
-      <li><a href="courses.html">
-        <i class="bi bi-book"></i> Courses
-      </a></li>
+      <li>
+        <a href="departments.html">
+          <i class="bi bi-diagram-3"></i> Departments
+        </a>
+      </li>
 
-      <li><a href="lecturers.html">
-        <i class="bi bi-person-workspace"></i> Lecturers
-      </a></li>
+      <li>
+        <a href="courses.html">
+          <i class="bi bi-book"></i> Courses
+        </a>
+      </li>
 
-      <li><a href="students.html">
-        <i class="bi bi-mortarboard"></i> Students
-      </a></li>
+      <li>
+        <a href="lecturers.html">
+          <i class="bi bi-person-workspace"></i> Lecturers
+        </a>
+      </li>
 
-      <li><a href="venues.html">
-        <i class="bi bi-bank"></i> Venues
-      </a></li>
+      <li>
+        <a href="students.html">
+          <i class="bi bi-mortarboard"></i> Students
+        </a>
+      </li>
 
-      <li><a href="ai-timetable.html">
-        <i class="bi bi-cpu"></i> AI Timetable
-      </a></li>
+      <li>
+        <a href="venues.html">
+          <i class="bi bi-bank"></i> Venues
+        </a>
+      </li>
 
-      <li><a href="exam-timetable.html">
-        <i class="bi bi-calendar-check"></i> Exam Timetable
-      </a></li>
+      <li>
+        <a href="ai-timetable.html">
+          <i class="bi bi-cpu"></i> AI Timetable
+        </a>
+      </li>
 
-      <li><a href="reports.html">
-        <i class="bi bi-bar-chart"></i> Reports
-      </a></li>
+      <li>
+        <a href="exam-timetable.html">
+          <i class="bi bi-calendar-check"></i> Exam Timetable
+        </a>
+      </li>
 
-      <li class="active"><a href="settings.html">
-        <i class="bi bi-gear"></i> Settings
-      </a></li>
+      <li>
+        <a href="reports.html">
+          <i class="bi bi-bar-chart"></i> Reports
+        </a>
+      </li>
 
-      <li><a href="about-system.html">
-        <i class="bi bi-info-circle"></i> About System
-      </a></li>
+      <li class="active">
+        <a href="settings.html">
+          <i class="bi bi-gear"></i> Settings
+        </a>
+      </li>
 
-      <li><a href="about-developer.html">
-        <i class="bi bi-person-badge"></i> About Developer
-      </a></li>
+      <li>
+        <a href="about-system.html">
+          <i class="bi bi-info-circle"></i> About System
+        </a>
+      </li>
 
-      <li><a href="../index.html" id="logoutBtn">
-        <i class="bi bi-box-arrow-left"></i> Logout
-      </a></li>
+      <li>
+        <a href="about-developer.html">
+          <i class="bi bi-person-badge"></i> About Developer
+        </a>
+      </li>
+
+      <li>
+        <a href="../index.html" id="logoutBtn">
+          <i class="bi bi-box-arrow-left"></i> Logout
+        </a>
+      </li>
+
     </ul>
   </aside>
 
   <div id="sidebarOverlay"></div>
 
+  <!-- MAIN CONTENT -->
   <main class="main-content">
+
     <nav class="topbar">
-      <button type="button" id="sidebarOpen"
+
+      <button
+        type="button"
+        id="sidebarOpen"
         class="btn btn-primary btn-sm"
         aria-label="Open navigation"
         aria-controls="sidebar"
@@ -209,11 +254,14 @@
       </div>
 
       <span id="currentDate" class="ms-auto"></span>
+
     </nav>
 
     <div class="container-fluid mt-4">
 
+      <!-- USER MANAGEMENT -->
       <div class="card shadow mb-4">
+
         <div class="card-header bg-dark text-white">
           <h5 class="mb-0">
             <i class="bi bi-people"></i>
@@ -222,8 +270,11 @@
         </div>
 
         <div class="card-body">
-          <div id="userMessage"
-            class="alert d-none" role="alert"></div>
+
+          <div
+            id="userMessage"
+            class="alert d-none"
+            role="alert"></div>
 
           <div class="mb-3">
             <label for="userSelect" class="form-label">
@@ -236,46 +287,64 @@
           </div>
 
           <form id="userForm">
+
             <input type="hidden" id="userId">
 
             <div class="row g-3">
+
               <div class="col-md-6">
                 <label for="username" class="form-label">
                   Username
                 </label>
-                <input id="username" class="form-control"
-                  required autocomplete="username">
+
+                <input
+                  type="text"
+                  id="username"
+                  class="form-control"
+                  autocomplete="username"
+                  required>
               </div>
 
               <div class="col-md-6">
                 <label for="fullName" class="form-label">
                   Full Name
                 </label>
-                <input id="fullName" class="form-control"
-                  required autocomplete="name">
+
+                <input
+                  type="text"
+                  id="fullName"
+                  class="form-control"
+                  autocomplete="name"
+                  required>
               </div>
 
               <div class="col-md-6">
                 <label for="email" class="form-label">
                   Email Address
                 </label>
-                <input id="email" type="email"
-                  class="form-control" required
-                  autocomplete="email">
+
+                <input
+                  type="email"
+                  id="email"
+                  class="form-control"
+                  autocomplete="email"
+                  required>
               </div>
 
               <div class="col-md-6">
                 <label for="password" class="form-label">
                   Password
                 </label>
-                <input id="password" type="password"
+
+                <input
+                  type="password"
+                  id="password"
                   class="form-control"
                   autocomplete="new-password"
-                  placeholder="Leave blank to keep unchanged">
+                  placeholder="Required for a new user">
 
                 <small class="text-muted">
-                  For a new user, enter a password.
-                  For an existing user, blank keeps it unchanged.
+                  Leave blank when updating to keep the existing password.
                 </small>
               </div>
 
@@ -283,6 +352,7 @@
                 <label for="role" class="form-label">
                   Role
                 </label>
+
                 <select id="role" class="form-select" required>
                   <option value="Admin">Admin</option>
                   <option value="Staff">Staff</option>
@@ -293,466 +363,130 @@
                 <label for="status" class="form-label">
                   Account Status
                 </label>
+
                 <select id="status" class="form-select" required>
                   <option value="Active">Active</option>
                   <option value="Inactive">Inactive</option>
                 </select>
               </div>
+
             </div>
 
             <div class="d-flex flex-wrap gap-2 mt-4">
-              <button type="submit" id="saveUserBtn"
+
+              <button
+                type="submit"
+                id="saveUserBtn"
                 class="btn btn-primary">
                 <i class="bi bi-save"></i> Save User
               </button>
 
-              <button type="button" id="newUserBtn"
+              <button
+                type="button"
+                id="newUserBtn"
                 class="btn btn-success">
                 <i class="bi bi-person-plus"></i> New User
               </button>
 
-              <button type="button" id="reloadUsersBtn"
+              <button
+                type="button"
+                id="reloadUsersBtn"
                 class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-clockwise"></i> Reload Users
               </button>
+
             </div>
           </form>
+
         </div>
       </div>
 
+      <!-- DATA BACKUP -->
       <div class="card shadow mb-4">
+
         <div class="card-header">
-          <h5 class="mb-0">Data Backup</h5>
+          <h5 class="mb-0">
+            <i class="bi bi-download"></i> Data Backup
+          </h5>
         </div>
 
         <div class="card-body">
           <p>
-            Export locally stored timetable data as a JSON backup.
-            This does not export the complete database.
+            Export selected timetable data stored locally in this browser.
+            This does not export the complete MySQL database.
           </p>
 
-          <button type="button" id="backupBtn"
+          <button
+            type="button"
+            id="backupBtn"
             class="btn btn-primary">
             <i class="bi bi-download"></i> Export Backup
           </button>
         </div>
+
       </div>
 
+      <!-- CLEAR LOCAL DATA -->
       <div class="card shadow mb-4">
+
         <div class="card-header">
-          <h5 class="mb-0">Clear Local Data</h5>
+          <h5 class="mb-0">
+            <i class="bi bi-trash"></i> Clear Local Data
+          </h5>
         </div>
 
         <div class="card-body">
           <p class="text-muted">
-            This removes selected timetable data saved in this
-            browser. It does not delete database records.
+            Clears selected timetable data saved in this browser.
+            Database records are not deleted.
           </p>
 
-          <button type="button" id="clearBtn"
+          <button
+            type="button"
+            id="clearBtn"
             class="btn btn-danger">
             <i class="bi bi-trash"></i> Clear Local Data
           </button>
         </div>
+
       </div>
 
-      <div class="card shadow">
+      <!-- SYSTEM INFORMATION -->
+      <div class="card shadow mb-4">
+
         <div class="card-header">
-          <h5 class="mb-0">System Information</h5>
+          <h5 class="mb-0">
+            <i class="bi bi-info-circle"></i> System Information
+          </h5>
         </div>
 
         <div class="card-body">
-          <p><strong>System:</strong>
-            BUK Intelligent Timetable Management System</p>
-          <p><strong>Institution:</strong>
-            Bayero University Kano</p>
-          <p><strong>Project focus:</strong>
-            Faculty of Computing</p>
-          <p class="mb-0"><strong>Version:</strong> 1.0</p>
+          <p>
+            <strong>System:</strong>
+            BUK Intelligent Timetable Management System
+          </p>
+
+          <p>
+            <strong>Institution:</strong>
+            Bayero University Kano
+          </p>
+
+          <p>
+            <strong>Project Focus:</strong>
+            Faculty of Computing
+          </p>
+
+          <p class="mb-0">
+            <strong>Version:</strong> 1.0
+          </p>
         </div>
+
       </div>
 
     </div>
   </main>
 </div>
 
-<script>
-"use strict";
-
-const API_BASE =
-  "https://buk-intelligent-timetable-system-production.up.railway.app/api";
-
-const USERS_API = `${API_BASE}/users`;
-
-const sidebar = document.getElementById("sidebar");
-const openBtn = document.getElementById("sidebarOpen");
-const closeBtn = document.getElementById("sidebarClose");
-const overlay = document.getElementById("sidebarOverlay");
-const userSelect = document.getElementById("userSelect");
-const userForm = document.getElementById("userForm");
-const userMessage = document.getElementById("userMessage");
-const saveUserBtn = document.getElementById("saveUserBtn");
-
-let users = [];
-
-document.getElementById("currentDate").textContent =
-  new Date().toLocaleDateString();
-
-/* Authentication */
-
-function clearSession() {
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
-  localStorage.removeItem("loggedIn");
-  localStorage.removeItem("username");
-}
-
-function requireLogin() {
-  const token = localStorage.getItem("token");
-  const loggedIn = localStorage.getItem("loggedIn") === "true";
-
-  if (!token || !loggedIn) {
-    clearSession();
-    window.location.replace("../index.html");
-    return false;
-  }
-
-  return true;
-}
-
-async function apiRequest(url, options = {}) {
-  const token = localStorage.getItem("token");
-
-  if (!token) {
-    clearSession();
-    window.location.replace("../index.html");
-    throw new Error("Your session has expired. Please log in again.");
-  }
-
-  const headers = {
-    ...(options.headers || {}),
-    Authorization: `Bearer ${token}`
-  };
-
-  if (options.body) {
-    headers["Content-Type"] = "application/json";
-  }
-
-  const response = await fetch(url, {
-    ...options,
-    headers
-  });
-
-  const text = await response.text();
-  let result = {};
-
-  if (text) {
-    try {
-      result = JSON.parse(text);
-    } catch {
-      result = { message: text };
-    }
-  }
-
-  if (response.status === 401) {
-    clearSession();
-    window.location.replace("../index.html");
-    throw new Error("Your session has expired. Please log in again.");
-  }
-
-  if (!response.ok || result.success === false) {
-    throw new Error(
-      result.message ||
-      `Request failed with status ${response.status}.`
-    );
-  }
-
-  return result;
-}
-
-/* Sidebar controls */
-
-function openSidebar() {
-  sidebar.classList.add("sidebar-open");
-  overlay.classList.add("show");
-  openBtn.setAttribute("aria-expanded", "true");
-}
-
-function closeSidebar() {
-  sidebar.classList.remove("sidebar-open");
-  overlay.classList.remove("show");
-  openBtn.setAttribute("aria-expanded", "false");
-}
-
-openBtn.addEventListener("click", openSidebar);
-closeBtn.addEventListener("click", closeSidebar);
-overlay.addEventListener("click", closeSidebar);
-
-document.addEventListener("keydown", function(event) {
-  if (event.key === "Escape") closeSidebar();
-});
-
-document.querySelectorAll("#sidebar a").forEach(function(link) {
-  link.addEventListener("click", closeSidebar);
-});
-
-document.getElementById("logoutBtn").addEventListener("click", function() {
-  clearSession();
-});
-
-/* User messages */
-
-function showMessage(message, type = "info") {
-  userMessage.className = `alert alert-${type}`;
-  userMessage.textContent = message;
-}
-
-function clearMessage() {
-  userMessage.className = "alert d-none";
-  userMessage.textContent = "";
-}
-
-function getList(result) {
-  if (Array.isArray(result)) return result;
-  if (Array.isArray(result.data)) return result.data;
-  if (Array.isArray(result.users)) return result.users;
-  return [];
-}
-
-/* Load users */
-
-async function loadUsers(selectedId = "") {
-  userSelect.innerHTML =
-    '<option value="">Loading users...</option>';
-
-  try {
-    const result = await apiRequest(USERS_API);
-    users = getList(result);
-
-    userSelect.innerHTML =
-      '<option value="">-- Select a user --</option>';
-
-    users.forEach(function(user) {
-      const option = document.createElement("option");
-      option.value = user.id;
-      option.textContent =
-        `${user.username || "User"} - ${user.full_name || ""}`;
-
-      userSelect.appendChild(option);
-    });
-
-    if (selectedId) {
-      userSelect.value = String(selectedId);
-      loadSelectedUser();
-    }
-
-    if (users.length === 0) {
-      showMessage("No users were returned by the API.", "warning");
-    } else {
-      clearMessage();
-    }
-  } catch (error) {
-    console.error("Load users error:", error);
-
-    userSelect.innerHTML =
-      '<option value="">Unable to load users</option>';
-
-    showMessage(
-      error.message || "Could not load users from the server.",
-      "danger"
-    );
-  }
-}
-
-/* Select an existing user */
-
-function loadSelectedUser() {
-  const user = users.find(function(item) {
-    return String(item.id) === String(userSelect.value);
-  });
-
-  if (!user) return;
-
-  document.getElementById("userId").value = user.id;
-  document.getElementById("username").value = user.username || "";
-  document.getElementById("fullName").value = user.full_name || "";
-  document.getElementById("email").value = user.email || "";
-  document.getElementById("password").value = "";
-  document.getElementById("role").value = user.role || "Staff";
-  document.getElementById("status").value = user.status || "Active";
-
-  saveUserBtn.innerHTML =
-    '<i class="bi bi-save"></i> Update User';
-
-  clearMessage();
-}
-
-function startNewUser() {
-  userForm.reset();
-
-  document.getElementById("userId").value = "";
-  userSelect.value = "";
-  document.getElementById("role").value = "Staff";
-  document.getElementById("status").value = "Active";
-
-  saveUserBtn.innerHTML =
-    '<i class="bi bi-person-plus"></i> Create User';
-
-  clearMessage();
-}
-
-userSelect.addEventListener("change", loadSelectedUser);
-
-document.getElementById("newUserBtn").addEventListener(
-  "click",
-  startNewUser
-);
-
-document.getElementById("reloadUsersBtn").addEventListener(
-  "click",
-  function() {
-    loadUsers(userSelect.value);
-  }
-);
-
-/* Create or update a user */
-
-userForm.addEventListener("submit", async function(event) {
-  event.preventDefault();
-  clearMessage();
-
-  const id = document.getElementById("userId").value.trim();
-  const password = document.getElementById("password").value;
-
-  const userData = {
-    username: document.getElementById("username").value.trim(),
-    full_name: document.getElementById("fullName").value.trim(),
-    email: document.getElementById("email").value.trim(),
-    role: document.getElementById("role").value,
-    status: document.getElementById("status").value
-  };
-
-  if (id) {
-    userData.id = Number(id);
-  }
-
-  if (password.trim()) {
-    userData.password = password;
-  }
-
-  if (!userData.username || !userData.full_name || !userData.email) {
-    showMessage("Complete all required user fields.", "warning");
-    return;
-  }
-
-  if (!id && !password.trim()) {
-    showMessage(
-      "Enter a password when creating a new user.",
-      "warning"
-    );
-    return;
-  }
-
-  saveUserBtn.disabled = true;
-
-  try {
-    const result = await apiRequest(
-      id ? `${USERS_API}/${encodeURIComponent(id)}` : USERS_API,
-      {
-        method: id ? "PUT" : "POST",
-        body: JSON.stringify(userData)
-      }
-    );
-
-    showMessage(
-      result.message ||
-        (id ? "User updated successfully." : "User created successfully."),
-      "success"
-    );
-
-    await loadUsers(id || "");
-
-    if (!id) startNewUser();
-  } catch (error) {
-    console.error("Save user error:", error);
-    showMessage(error.message || "Could not save the user.", "danger");
-  } finally {
-    saveUserBtn.disabled = false;
-  }
-});
-
-/* Export locally stored data */
-
-document.getElementById("backupBtn").addEventListener("click", function() {
-  const keys = [
-    "faculties",
-    "departments",
-    "courses",
-    "lecturers",
-    "students",
-    "venues",
-    "generatedTimetable",
-    "examTimetable"
-  ];
-
-  const backup = {
-    system: "BUK ITMS",
-    createdAt: new Date().toISOString(),
-    data: {}
-  };
-
-  keys.forEach(function(key) {
-    const value = localStorage.getItem(key);
-    if (value !== null) backup.data[key] = value;
-  });
-
-  const blob = new Blob(
-    [JSON.stringify(backup, null, 2)],
-    { type: "application/json" }
-  );
-
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-
-  link.href = url;
-  link.download = "BUK_ITMS_Backup.json";
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-
-  URL.revokeObjectURL(url);
-});
-
-/* Clear selected local data only */
-
-document.getElementById("clearBtn").addEventListener("click", function() {
-  if (!confirm(
-    "Clear locally stored timetable data? This will not delete database records."
-  )) {
-    return;
-  }
-
-  [
-    "faculties",
-    "departments",
-    "courses",
-    "lecturers",
-    "students",
-    "venues",
-    "generatedTimetable",
-    "examTimetable"
-  ].forEach(function(key) {
-    localStorage.removeItem(key);
-  });
-
-  alert("Local timetable data cleared.");
-});
-
-/* Start page */
-
-if (requireLogin()) {
-  loadUsers();
-}
-</script>
+<script src="../js/settings.js"></script>
 </body>
 </html>
