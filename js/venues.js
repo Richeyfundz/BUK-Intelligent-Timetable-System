@@ -1,7 +1,7 @@
 
 // =============================================
-// BUK Intelligent Timetable Management System
-// Venues Module - Railway API
+// BUK-ITMS VENUES MODULE
+// Railway API + Authentication
 // =============================================
 
 const API_URL =
@@ -9,8 +9,16 @@ const API_URL =
 
 let editingVenueId = null;
 
-document.addEventListener("DOMContentLoaded", function () {
-  if (localStorage.getItem("loggedIn") !== "true") {
+// =============================================
+// INITIALIZATION
+// =============================================
+
+document.addEventListener("DOMContentLoaded", () => {
+  if (
+    localStorage.getItem("loggedIn") !== "true" ||
+    !localStorage.getItem("token")
+  ) {
+    clearSession();
     window.location.href = "../index.html";
     return;
   }
@@ -26,15 +34,74 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  document.getElementById("venueForm")?.addEventListener("submit", saveVenue);
-  document.getElementById("searchVenue")?.addEventListener("input", searchVenue);
-  document.getElementById("logoutBtn")?.addEventListener("click", logout);
+  document.getElementById("venueForm")
+    ?.addEventListener("submit", saveVenue);
+
+  document.getElementById("searchVenue")
+    ?.addEventListener("input", searchVenue);
+
+  document.getElementById("logoutBtn")
+    ?.addEventListener("click", logout);
+
+  document.getElementById("venueForm")
+    ?.addEventListener("reset", () => {
+      editingVenueId = null;
+      setSaveButtonText();
+    });
 
   loadVenues();
 });
 
 // =============================================
-// Read API response
+// AUTHENTICATION
+// =============================================
+
+function clearSession() {
+  localStorage.removeItem("loggedIn");
+  localStorage.removeItem("username");
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+}
+
+async function apiRequest(url, options = {}) {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    clearSession();
+    window.location.href = "../index.html";
+    throw new Error("Please log in again.");
+  }
+
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      ...(options.body
+        ? { "Content-Type": "application/json" }
+        : {}),
+      ...(options.headers || {}),
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (response.status === 401) {
+    clearSession();
+    window.location.href = "../index.html";
+    throw new Error("Your session expired. Please log in again.");
+  }
+
+  const result = await response.json().catch(() => ({}));
+
+  if (!response.ok || result.success === false) {
+    throw new Error(
+      result.message || result.error || "Request failed."
+    );
+  }
+
+  return result;
+}
+
+// =============================================
+// READ API RESPONSE
 // =============================================
 
 function getDataArray(result) {
@@ -45,7 +112,7 @@ function getDataArray(result) {
 }
 
 // =============================================
-// Save or Update Venue
+// SAVE OR UPDATE VENUE
 // =============================================
 
 async function saveVenue(event) {
@@ -53,11 +120,21 @@ async function saveVenue(event) {
 
   const code = document.getElementById("venueCode").value.trim();
   const name = document.getElementById("venueName").value.trim();
-  const capacity = Number(document.getElementById("capacity").value);
+  const capacity = Number(
+    document.getElementById("capacity").value
+  );
   const type = document.getElementById("venueType").value;
 
-  if (!code || !name || !type || !Number.isFinite(capacity) || capacity <= 0) {
-    alert("Enter a venue code, name, type, and a capacity greater than zero.");
+  if (
+    !code ||
+    !name ||
+    !type ||
+    !Number.isFinite(capacity) ||
+    capacity <= 0
+  ) {
+    alert(
+      "Enter a venue code, name, type, and a capacity greater than zero."
+    );
     return;
   }
 
@@ -65,30 +142,28 @@ async function saveVenue(event) {
     venue_code: code,
     venue_name: name,
     venue_type: type,
-    capacity: capacity,
+    capacity,
   };
 
+  const button = document.querySelector(
+    '#venueForm button[type="submit"]'
+  );
+
+  if (button) button.disabled = true;
+
   try {
-    const url = editingVenueId
-      ? `${API_URL}/${editingVenueId}`
-      : API_URL;
+    const isEditing = Boolean(editingVenueId);
 
-    const response = await fetch(url, {
-      method: editingVenueId ? "PUT" : "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(venueData),
-    });
-
-    const result = await response.json();
-
-    if (!response.ok || result.success === false) {
-      throw new Error(result.message || "Failed to save venue.");
-    }
+    await apiRequest(
+      isEditing ? `${API_URL}/${editingVenueId}` : API_URL,
+      {
+        method: isEditing ? "PUT" : "POST",
+        body: JSON.stringify(venueData),
+      }
+    );
 
     alert(
-      editingVenueId
+      isEditing
         ? "Venue updated successfully."
         : "Venue added successfully."
     );
@@ -96,15 +171,18 @@ async function saveVenue(event) {
     editingVenueId = null;
     document.getElementById("venueForm").reset();
     setSaveButtonText();
+
     await loadVenues();
   } catch (error) {
     console.error("Save Venue Error:", error);
     alert("Failed to save venue: " + error.message);
+  } finally {
+    if (button) button.disabled = false;
   }
 }
 
 // =============================================
-// Load Venues
+// LOAD VENUES
 // =============================================
 
 async function loadVenues() {
@@ -118,17 +196,12 @@ async function loadVenues() {
   `;
 
   try {
-    const response = await fetch(API_URL);
-    const result = await response.json();
-
-    if (!response.ok || result.success === false) {
-      throw new Error(result.message || "Failed to load venues.");
-    }
-
+    const result = await apiRequest(API_URL);
     const venues = getDataArray(result);
+
     table.innerHTML = "";
 
-    if (venues.length === 0) {
+    if (!venues.length) {
       table.innerHTML = `
         <tr>
           <td colspan="5" class="text-center">No venues found.</td>
@@ -159,7 +232,8 @@ async function loadVenues() {
         editButton.type = "button";
         editButton.className = "btn btn-warning btn-sm me-2";
         editButton.title = "Edit Venue";
-        editButton.innerHTML = '<i class="bi bi-pencil-square"></i>';
+        editButton.innerHTML =
+          '<i class="bi bi-pencil-square"></i>';
         editButton.addEventListener("click", () => editVenue(id));
 
         const deleteButton = document.createElement("button");
@@ -180,29 +254,27 @@ async function loadVenues() {
   } catch (error) {
     console.error("Load Venues Error:", error);
 
-    table.innerHTML = `
-      <tr>
-        <td colspan="5" class="text-center text-danger">
-          ${escapeHTML(error.message || "Failed to load venues.")}
-        </td>
-      </tr>
-    `;
+    table.replaceChildren();
+
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+
+    cell.colSpan = 5;
+    cell.className = "text-center text-danger";
+    cell.textContent = error.message || "Failed to load venues.";
+
+    row.appendChild(cell);
+    table.appendChild(row);
   }
 }
 
 // =============================================
-// Edit Venue
+// EDIT VENUE
 // =============================================
 
 async function editVenue(id) {
   try {
-    const response = await fetch(`${API_URL}/${id}`);
-    const result = await response.json();
-
-    if (!response.ok || result.success === false) {
-      throw new Error(result.message || "Failed to load venue.");
-    }
-
+    const result = await apiRequest(`${API_URL}/${id}`);
     const venue = result.data || result.venue || result;
 
     editingVenueId = venue.id ?? venue.venue_id ?? id;
@@ -213,7 +285,8 @@ async function editVenue(id) {
     document.getElementById("venueName").value =
       venue.venue_name ?? venue.name ?? "";
 
-    document.getElementById("capacity").value = venue.capacity ?? "";
+    document.getElementById("capacity").value =
+      venue.capacity ?? "";
 
     document.getElementById("venueType").value =
       venue.venue_type ?? venue.type ?? "";
@@ -228,22 +301,18 @@ async function editVenue(id) {
 }
 
 // =============================================
-// Delete Venue
+// DELETE VENUE
 // =============================================
 
 async function deleteVenue(id) {
-  if (!confirm("Are you sure you want to delete this venue?")) return;
+  if (!confirm("Are you sure you want to delete this venue?")) {
+    return;
+  }
 
   try {
-    const response = await fetch(`${API_URL}/${id}`, {
+    await apiRequest(`${API_URL}/${id}`, {
       method: "DELETE",
     });
-
-    const result = await response.json();
-
-    if (!response.ok || result.success === false) {
-      throw new Error(result.message || "Failed to delete venue.");
-    }
 
     if (String(editingVenueId) === String(id)) {
       editingVenueId = null;
@@ -260,7 +329,7 @@ async function deleteVenue(id) {
 }
 
 // =============================================
-// Search Venues
+// SEARCH VENUES
 // =============================================
 
 function searchVenue() {
@@ -277,7 +346,7 @@ function searchVenue() {
 }
 
 // =============================================
-// Button Text
+// BUTTON TEXT
 // =============================================
 
 function setSaveButtonText() {
@@ -293,30 +362,11 @@ function setSaveButtonText() {
 }
 
 // =============================================
-// Logout
+// LOGOUT
 // =============================================
 
 function logout(event) {
-  event.preventDefault();
-
-  localStorage.removeItem("loggedIn");
-  localStorage.removeItem("username");
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
-
+  event?.preventDefault();
+  clearSession();
   window.location.href = "../index.html";
 }
-
-// =============================================
-// Escape HTML in error messages
-// =============================================
-
-function escapeHTML(value) {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
