@@ -13,7 +13,7 @@ const {
 const {
   authenticateToken,
   requireAdmin,
-} = require("../middleware/authMiddleware");
+} = require("../authMiddleware");
 
 // View faculties: active authenticated users
 router.get("/", authenticateToken, getAllFaculties);
