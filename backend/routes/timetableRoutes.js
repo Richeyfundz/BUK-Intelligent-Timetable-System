@@ -7,7 +7,7 @@ const timetableController =
 
 const {
   authenticateToken,
-} = require("../middleware/authMiddleware");
+} = require("../authMiddleware");
 
 // Retrieve saved timetable records
 router.get(
