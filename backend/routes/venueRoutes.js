@@ -8,7 +8,7 @@ const venueController =
 const {
   authenticateToken,
   requireAdmin,
-} = require("../middleware/authMiddleware");
+} = require("../authMiddleware");
 
 // View venues
 router.get(
