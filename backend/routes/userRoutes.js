@@ -6,7 +6,7 @@ const userController = require("../controllers/userController");
 const {
   authenticateToken,
   requireAdmin
-} = require("../middleware/authMiddleware");
+} = require("../authMiddleware");
 
 // All user-management routes require an Admin account.
 router.use(authenticateToken, requireAdmin);
