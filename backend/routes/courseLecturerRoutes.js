@@ -8,7 +8,7 @@ const courseLecturerController =
 const {
   authenticateToken,
   requireAdmin,
-} = require("../middleware/authMiddleware");
+} = require("../authMiddleware");
 
 // Get all lecturer-course assignments
 router.get(
