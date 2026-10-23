@@ -7,7 +7,7 @@ const courseController = require("../controllers/courseController");
 const {
   authenticateToken,
   requireAdmin,
-} = require("../middleware/authMiddleware");
+} = require("../authMiddleware");
 
 // View courses: active authenticated users
 router.get("/", authenticateToken, courseController.getAllCourses);
