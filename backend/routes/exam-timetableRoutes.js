@@ -8,7 +8,7 @@ const examTimetableController =
 const {
   authenticateToken,
   requireAdmin,
-} = require("../middleware/authMiddleware");
+} = require("../authMiddleware");
 
 // Generate exam timetable
 router.post(
