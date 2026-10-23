@@ -8,7 +8,7 @@ const studentController =
 const {
   authenticateToken,
   requireAdmin,
-} = require("../middleware/authMiddleware");
+} = require("../authMiddleware");
 
 // View student records
 router.get(
