@@ -8,7 +8,7 @@ const aiTimetableController =
 const {
   authenticateToken,
   requireAdmin,
-} = require("../middleware/authMiddleware");
+} = require("../authMiddleware");
 
 // Generate AI timetable
 router.post(
