@@ -15,7 +15,7 @@ if (loginForm) {
 
     try {
       const response = await fetch(
-        "https://buk-intelligent-timetable-system-production.up.railway.app/api/auth/login",
+        https://buk-itms-backend.onrender.com/api/auth/login
         {
           method: "POST",
           headers: {
