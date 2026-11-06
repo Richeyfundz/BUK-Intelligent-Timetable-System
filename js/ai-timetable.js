@@ -580,23 +580,46 @@ async function saveTimetable() {
 // CLEAR PREVIEW
 // =====================================================
 
-function clearTimetable() {
-  generatedTimetable = [];
-
-  localStorage.removeItem("generatedTimetable");
-
-  displayTimetable([]);
-  clearSummary();
-
-  const saveButton = document.getElementById("saveTimetable");
-
-  if (saveButton) {
-    saveButton.hidden = true;
+async function clearTimetable() {
+  if (!confirm(
+    "This will permanently clear all saved lecture timetables. Continue?"
+  )) {
+    return;
   }
 
-  showMessage("The timetable preview has been cleared.", "info");
-}
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/timetables/clear`,
+      {
+        method: "DELETE",
+        headers: getAuthHeaders()
+      }
+    );
 
+    const result = await readAPIResponse(response);
+
+    generatedTimetable = [];
+    localStorage.removeItem("generatedTimetable");
+
+    displayTimetable([]);
+    clearSummary();
+
+    const saveButton =
+      document.getElementById("saveTimetable");
+
+    if (saveButton) saveButton.hidden = true;
+
+    showMessage(
+      result.message || "Saved timetables cleared.",
+      "success"
+    );
+  } catch (error) {
+    showMessage(
+      error.message || "Failed to clear saved timetables.",
+      "danger"
+    );
+  }
+}
 // =====================================================
 // RESTORE PREVIOUS PREVIEW
 // =====================================================
