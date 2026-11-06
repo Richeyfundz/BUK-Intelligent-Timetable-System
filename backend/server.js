@@ -7,6 +7,8 @@ const app = express();
 
 // Database connection
 require("./config/database");
+const setupDatabase = require("./config/setupDatabase");
+const crypto = require("crypto");
 
 // Middleware
 app.use(cors());
