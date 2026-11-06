@@ -4,187 +4,88 @@ const db = require("../config/database");
 // GET ALL LECTURERS
 exports.getAll = (callback) => {
   const sql = `
-    SELECT
-      l.id,
-      l.department_id,
-      d.department_name,
-      l.staff_id,
-      l.first_name,
-      l.last_name,
-      l.email,
-      l.phone,
-      l.academic_rank,
-      l.specialization,
-      l.created_at
+    SELECT l.*, d.department_name
     FROM lecturers l
-    LEFT JOIN departments d ON l.department_id = d.id
+    LEFT JOIN departments d
+      ON l.department_id = d.id
     ORDER BY l.id DESC
   `;
 
   db.query(sql, callback);
 };
 
-// GET LECTURER BY ID
+// GET ONE LECTURER
 exports.getById = (id, callback) => {
-  const sql = `
-    SELECT
-      l.id,
-      l.department_id,
-      d.department_name,
-      l.staff_id,
-      l.first_name,
-      l.last_name,
-      l.email,
-      l.phone,
-      l.academic_rank,
-      l.specialization,
-      l.created_at
-    FROM lecturers l
-    LEFT JOIN departments d ON l.department_id = d.id
-    WHERE l.id = ?
-  `;
-
-  db.query(sql, [id], callback);
+  db.query(
+    "SELECT * FROM lecturers WHERE id = ?",
+    [id],
+    callback
+  );
 };
 
 // CREATE LECTURER
-exports.create = (lecturer, callback) => {
-  const sql = `
-    INSERT INTO lecturers (
-      department_id,
-      staff_id,
-      first_name,
-      last_name,
-      email
-    )
-    VALUES (?, ?, ?, ?, ?)
-  `;
-
-  const values = [
-    lecturer.department_id,
-    lecturer.staff_id,
-    lecturer.first_name,
-    lecturer.last_name,
-    lecturer.email
-  ];
-
-  db.query(sql, values, callback);
+exports.create = (data, callback) => {
+  db.query(
+    "INSERT INTO lecturers SET ?",
+    [data],
+    callback
+  );
 };
 
 // UPDATE LECTURER
-exports.update = (id, lecturer, callback) => {
-  const sql = `
-    UPDATE lecturers
-    SET
-      department_id = ?,
-      staff_id = ?,
-      first_name = ?,
-      last_name = ?,
-      email = ?
-    WHERE id = ?
-  `;
-
-  const values = [
-    lecturer.department_id,
-    lecturer.staff_id,
-    lecturer.first_name,
-    lecturer.last_name,
-    lecturer.email,
-    id
-  ];
-
-  db.query(sql, values, callback);
+exports.update = (id, data, callback) => {
+  db.query(
+    "UPDATE lecturers SET ? WHERE id = ?",
+    [data, id],
+    callback
+  );
 };
 
-// GET ASSIGNED COURSES
-exports.getAssignedCourses = (lecturerId, callback) => {
-  const sql = `
-    SELECT course_id
-    FROM course_lecturers
-    WHERE lecturer_id = ?
-  `;
+// DELETE LECTURER SAFELY
+exports.delete = (id, callback) => {
+  db.beginTransaction((transactionError) => {
+    if (transactionError) {
+      return callback(transactionError);
+    }
 
-  db.query(sql, [lecturerId], callback);
-};
-
-// SAVE COURSE ASSIGNMENTS
-// Uses one dedicated connection for the transaction.
-exports.assignCourses = (lecturerId, courseIds, callback) => {
-  db.getConnection((err, connection) => {
-    if (err) return callback(err);
-
-    connection.beginTransaction((err) => {
-      if (err) {
-        connection.release();
-        return callback(err);
-      }
-
-      const rollback = (error) => {
-        connection.rollback(() => {
-          connection.release();
-          callback(error);
-        });
-      };
-
-      connection.query(
-        `DELETE FROM course_lecturers
-         WHERE lecturer_id = ?`,
-        [lecturerId],
-        (deleteErr) => {
-          if (deleteErr) {
-            return rollback(deleteErr);
-          }
-
-          if (courseIds.length === 0) {
-            return connection.commit((commitErr) => {
-              if (commitErr) {
-                return rollback(commitErr);
-              }
-
-              connection.release();
-              callback(null, { success: true });
-            });
-          }
-
-          const values = courseIds.map((courseId) => [
-            Number(courseId),
-            Number(lecturerId)
-          ]);
-
-          const sql = `
-            INSERT INTO course_lecturers (
-              course_id,
-              lecturer_id
-            )
-            VALUES ?
-          `;
-
-          connection.query(sql, [values], (insertErr) => {
-            if (insertErr) {
-              return rollback(insertErr);
-            }
-
-            connection.commit((commitErr) => {
-              if (commitErr) {
-                return rollback(commitErr);
-              }
-
-              connection.release();
-              callback(null, { success: true });
-            });
+    db.query(
+      "DELETE FROM course_lecturers WHERE lecturer_id = ?",
+      [id],
+      (assignmentError) => {
+        if (assignmentError) {
+          return db.rollback(() => {
+            callback(assignmentError);
           });
         }
-      );
-    });
+
+        db.query(
+          "DELETE FROM lecturers WHERE id = ?",
+          [id],
+          (deleteError, result) => {
+            if (deleteError) {
+              return db.rollback(() => {
+                callback(deleteError);
+              });
+            }
+
+            if (!result.affectedRows) {
+              return db.rollback(() => {
+                callback(null, result);
+              });
+            }
+
+            db.commit((commitError) => {
+              if (commitError) {
+                return db.rollback(() => {
+                  callback(commitError);
+                });
+              }
+
+              callback(null, result);
+            });
+          }
+        );
+      }
+    );
   });
-};
-
-// DELETE LECTURER
-exports.delete = (id, callback) => {
-  const sql = `
-    DELETE FROM lecturers
-    WHERE id = ?
-  `;
-
-  db.query(sql, [id], callback);
 };
