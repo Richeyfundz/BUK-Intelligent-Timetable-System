@@ -51,7 +51,31 @@ app.use("/api/users", userRoutes);
 
 // Saved lecture timetable records for Reports
 app.use("/api/timetables", timetableRoutes);
+// Protected database setup route
+app.post("/api/setup-database", async (req, res) => {
+  if (
+    !process.env.DB_SETUP_KEY ||
+    req.get("x-setup-key") !== process.env.DB_SETUP_KEY
+  ) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized"
+    });
+  }
 
+  try {
+    const result = await setupDatabase();
+    res.json(result);
+  } catch (error) {
+    console.error("Database setup failed:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Database setup failed.",
+      error: error.message
+    });
+  }
+});
 // Backend test route
 app.get("/", (req, res) => {
   res.send(
