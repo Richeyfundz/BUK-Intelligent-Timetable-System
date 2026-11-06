@@ -4,7 +4,7 @@
 // =====================================================
 
 const API_URL =
-  "https://buk-intelligent-timetable-system-production.up.railway.app/api/exam-timetables";
+"https://buk-itms-backend.onrender.com/api"
 
 let generatedExamTimetable = [];
 
