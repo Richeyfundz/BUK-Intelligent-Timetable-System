@@ -5,7 +5,7 @@
 // =============================================
 
 const API_URL =
-  "https://buk-itms-backend.onrender.com/api";
+  "https://buk-itms-backend.onrender.com/api/venues";
 
 let editingVenueId = null;
 
