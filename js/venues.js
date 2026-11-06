@@ -1,7 +1,7 @@
 
 // =============================================
 // BUK-ITMS VENUES MODULE
-// Railway API + Authentication
+// Render API + Authentication
 // =============================================
 
 const API_URL =
@@ -63,6 +63,10 @@ function clearSession() {
   localStorage.removeItem("user");
 }
 
+// =============================================
+// API REQUEST
+// =============================================
+
 async function apiRequest(url, options = {}) {
   const token = localStorage.getItem("token");
 
@@ -92,8 +96,16 @@ async function apiRequest(url, options = {}) {
   const result = await response.json().catch(() => ({}));
 
   if (!response.ok || result.success === false) {
+    const details = result.table
+      ? ` Table: ${result.table}, Column: ${result.column}, Records: ${result.records}.`
+      : result.databaseError
+        ? ` Details: ${result.databaseError}`
+        : result.error
+          ? ` Details: ${result.error}`
+          : "";
+
     throw new Error(
-      result.message || result.error || "Request failed."
+      (result.message || "Request failed.") + details
     );
   }
 
@@ -120,9 +132,11 @@ async function saveVenue(event) {
 
   const code = document.getElementById("venueCode").value.trim();
   const name = document.getElementById("venueName").value.trim();
+
   const capacity = Number(
     document.getElementById("capacity").value
   );
+
   const type = document.getElementById("venueType").value;
 
   if (
@@ -169,13 +183,18 @@ async function saveVenue(event) {
     );
 
     editingVenueId = null;
+
     document.getElementById("venueForm").reset();
+
     setSaveButtonText();
 
     await loadVenues();
+
   } catch (error) {
     console.error("Save Venue Error:", error);
+
     alert("Failed to save venue: " + error.message);
+
   } finally {
     if (button) button.disabled = false;
   }
@@ -187,16 +206,20 @@ async function saveVenue(event) {
 
 async function loadVenues() {
   const table = document.getElementById("venueTable");
+
   if (!table) return;
 
   table.innerHTML = `
     <tr>
-      <td colspan="5" class="text-center">Loading venues...</td>
+      <td colspan="5" class="text-center">
+        Loading venues...
+      </td>
     </tr>
   `;
 
   try {
     const result = await apiRequest(API_URL);
+
     const venues = getDataArray(result);
 
     table.innerHTML = "";
@@ -204,7 +227,9 @@ async function loadVenues() {
     if (!venues.length) {
       table.innerHTML = `
         <tr>
-          <td colspan="5" class="text-center">No venues found.</td>
+          <td colspan="5" class="text-center">
+            No venues found.
+          </td>
         </tr>
       `;
       return;
@@ -212,6 +237,7 @@ async function loadVenues() {
 
     venues.forEach((venue) => {
       const id = Number(venue.id ?? venue.venue_id);
+
       const row = document.createElement("tr");
 
       [
@@ -221,7 +247,9 @@ async function loadVenues() {
         venue.venue_type ?? venue.type ?? "",
       ].forEach((value) => {
         const cell = document.createElement("td");
+
         cell.textContent = value;
+
         row.appendChild(cell);
       });
 
@@ -229,41 +257,64 @@ async function loadVenues() {
 
       if (Number.isFinite(id) && id > 0) {
         const editButton = document.createElement("button");
+
         editButton.type = "button";
-        editButton.className = "btn btn-warning btn-sm me-2";
+        editButton.className =
+          "btn btn-warning btn-sm me-2";
+
         editButton.title = "Edit Venue";
+
         editButton.innerHTML =
           '<i class="bi bi-pencil-square"></i>';
-        editButton.addEventListener("click", () => editVenue(id));
+
+        editButton.addEventListener(
+          "click",
+          () => editVenue(id)
+        );
 
         const deleteButton = document.createElement("button");
+
         deleteButton.type = "button";
-        deleteButton.className = "btn btn-danger btn-sm";
+        deleteButton.className =
+          "btn btn-danger btn-sm";
+
         deleteButton.title = "Delete Venue";
-        deleteButton.innerHTML = '<i class="bi bi-trash"></i>';
-        deleteButton.addEventListener("click", () => deleteVenue(id));
+
+        deleteButton.innerHTML =
+          '<i class="bi bi-trash"></i>';
+
+        deleteButton.addEventListener(
+          "click",
+          () => deleteVenue(id)
+        );
 
         actions.append(editButton, deleteButton);
       }
 
       row.appendChild(actions);
+
       table.appendChild(row);
     });
 
     searchVenue();
+
   } catch (error) {
     console.error("Load Venues Error:", error);
 
     table.replaceChildren();
 
     const row = document.createElement("tr");
+
     const cell = document.createElement("td");
 
     cell.colSpan = 5;
     cell.className = "text-center text-danger";
-    cell.textContent = error.message || "Failed to load venues.";
+
+    cell.textContent =
+      error.message || "Failed to load venues.";
 
     row.appendChild(cell);
+
     table.appendChild(row);
   }
 }
@@ -275,6 +326,7 @@ async function loadVenues() {
 async function editVenue(id) {
   try {
     const result = await apiRequest(`${API_URL}/${id}`);
+
     const venue = result.data || result.venue || result;
 
     editingVenueId = venue.id ?? venue.venue_id ?? id;
@@ -293,9 +345,14 @@ async function editVenue(id) {
 
     setSaveButtonText();
 
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    });
+
   } catch (error) {
     console.error("Edit Venue Error:", error);
+
     alert("Failed to load venue: " + error.message);
   }
 }
@@ -316,14 +373,19 @@ async function deleteVenue(id) {
 
     if (String(editingVenueId) === String(id)) {
       editingVenueId = null;
+
       document.getElementById("venueForm").reset();
+
       setSaveButtonText();
     }
 
     alert("Venue deleted successfully.");
+
     await loadVenues();
+
   } catch (error) {
     console.error("Delete Venue Error:", error);
+
     alert("Failed to delete venue: " + error.message);
   }
 }
@@ -333,16 +395,21 @@ async function deleteVenue(id) {
 // =============================================
 
 function searchVenue() {
-  const searchInput = document.getElementById("searchVenue");
+  const searchInput =
+    document.getElementById("searchVenue");
+
   if (!searchInput) return;
 
-  const keyword = searchInput.value.trim().toLowerCase();
+  const keyword =
+    searchInput.value.trim().toLowerCase();
 
-  document.querySelectorAll("#venueTable tr").forEach((row) => {
-    row.style.display = row.innerText.toLowerCase().includes(keyword)
-      ? ""
-      : "none";
-  });
+  document.querySelectorAll("#venueTable tr")
+    .forEach((row) => {
+      row.style.display =
+        row.innerText.toLowerCase().includes(keyword)
+          ? ""
+          : "none";
+    });
 }
 
 // =============================================
@@ -367,6 +434,8 @@ function setSaveButtonText() {
 
 function logout(event) {
   event?.preventDefault();
+
   clearSession();
+
   window.location.href = "../index.html";
 }
