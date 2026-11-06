@@ -161,12 +161,20 @@ exports.updateVenue = (req, res) => {
     });
   });
 };
-
-// DELETE VENUE
+ // DELETE VENUE
 exports.deleteVenue = (req, res) => {
   Venue.delete(req.params.id, (err, result) => {
     if (err) {
       console.error("Delete Venue Error:", err);
+
+      if (err.code === "VENUE_IN_USE") {
+        return res.status(409).json({
+          success: false,
+          message: "Venue is being used in existing timetable records.",
+          lectureRecords: err.lectures,
+          examRecords: err.exams
+        });
+      }
 
       if (
         err.code === "ER_ROW_IS_REFERENCED_2" ||
@@ -174,8 +182,8 @@ exports.deleteVenue = (req, res) => {
       ) {
         return res.status(409).json({
           success: false,
-          message:
-            "This venue cannot be deleted because it is being used in a timetable or exam timetable. Remove or change those timetable entries first."
+          message: "Another database record references this venue.",
+          databaseError: err.sqlMessage || err.message
         });
       }
 
@@ -199,3 +207,4 @@ exports.deleteVenue = (req, res) => {
     });
   });
 };
+
