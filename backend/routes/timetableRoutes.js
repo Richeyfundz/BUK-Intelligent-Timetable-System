@@ -7,13 +7,22 @@ const timetableController =
 
 const {
   authenticateToken,
+  requireAdmin
 } = require("../authMiddleware");
 
-// Retrieve saved timetable records
+// Retrieve saved timetables
 router.get(
   "/",
   authenticateToken,
   timetableController.getTimetables
+);
+
+// Clear saved lecture timetables
+router.delete(
+  "/clear",
+  authenticateToken,
+  requireAdmin,
+  timetableController.clearTimetables
 );
 
 module.exports = router;
