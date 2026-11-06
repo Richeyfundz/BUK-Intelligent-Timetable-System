@@ -5,7 +5,7 @@
  // =============================================
 
 const API_BASE_URL =
-  "https://buk-itms-backend.onrender.com/api"
+  "https://buk-itms-backend.onrender.com/api";
 
 const API_URL = `${API_BASE_URL}/courses`;
 const DEPARTMENT_API_URL = `${API_BASE_URL}/departments`;
