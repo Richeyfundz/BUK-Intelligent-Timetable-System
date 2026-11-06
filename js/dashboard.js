@@ -5,7 +5,7 @@
  // ======================================
 
 const API_BASE_URL =
-  https://buk-itms-backend.onrender.com/api
+ "https://buk-itms-backend.onrender.com/api";
 
 document.addEventListener("DOMContentLoaded", function () {
   // Login Check
