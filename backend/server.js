@@ -6,7 +6,7 @@ require("dotenv").config();
 const app = express();
 
 // Database connection
-require("./config/database");
+const db = require("./config/database");
 const setupDatabase = require("./setupDatabase");
 
 // Middleware
