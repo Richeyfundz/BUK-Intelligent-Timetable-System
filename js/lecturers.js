@@ -1,11 +1,11 @@
 
- // =============================================
- // BUK-ITMS LECTURERS MODULE
- // Railway API + Authentication
- // =============================================
+// =============================================
+// BUK-ITMS LECTURERS MODULE
+// RENDER API + AUTHENTICATION
+// =============================================
 
 const API_BASE =
-"https://buk-itms-backend.onrender.com/api";
+  "https://buk-itms-backend.onrender.com/api";
 
 const LECTURER_API = `${API_BASE}/lecturers`;
 const DEPARTMENT_API = `${API_BASE}/departments`;
@@ -31,7 +31,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (form) form.addEventListener("submit", saveLecturer);
   if (resetBtn) resetBtn.addEventListener("click", resetForm);
-  if (searchInput) searchInput.addEventListener("input", searchLecturers);
+  if (searchInput) {
+    searchInput.addEventListener("input", searchLecturers);
+  }
   if (logoutBtn) logoutBtn.addEventListener("click", logout);
 
   setCurrentDate();
@@ -63,7 +65,9 @@ async function apiRequest(url, options = {}) {
   const response = await fetch(url, {
     ...options,
     headers: {
-      ...(options.body ? { "Content-Type": "application/json" } : {}),
+      ...(options.body
+        ? { "Content-Type": "application/json" }
+        : {}),
       ...(options.headers || {}),
       Authorization: `Bearer ${token}`,
     },
@@ -77,9 +81,18 @@ async function apiRequest(url, options = {}) {
 
   const result = await response.json().catch(() => ({}));
 
+  // SHOW THE REAL DATABASE ERROR
   if (!response.ok || result.success === false) {
+    const details = result.databaseError
+      ? ` Details: ${result.databaseError}`
+      : result.errorCode
+        ? ` (${result.errorCode})`
+        : "";
+
     throw new Error(
-      result.message || `Request failed (${response.status})`
+      (result.message ||
+        `Request failed (${response.status})`) +
+      details
     );
   }
 
@@ -88,7 +101,9 @@ async function apiRequest(url, options = {}) {
 
 function getDataArray(result) {
   if (Array.isArray(result)) return result;
-  if (result && Array.isArray(result.data)) return result.data;
+  if (result && Array.isArray(result.data)) {
+    return result.data;
+  }
   return [];
 }
 
@@ -100,7 +115,8 @@ function setCurrentDate() {
   const date = document.getElementById("currentDate");
 
   if (date) {
-    date.textContent = new Date().toLocaleDateString("en-GB");
+    date.textContent =
+      new Date().toLocaleDateString("en-GB");
   }
 }
 
@@ -139,7 +155,8 @@ async function loadDepartments() {
     departments.forEach((department) => {
       const option = document.createElement("option");
       option.value = department.id;
-      option.textContent = department.department_name || "";
+      option.textContent =
+        department.department_name || "";
       select.appendChild(option);
     });
   } catch (error) {
@@ -155,7 +172,8 @@ async function loadCourses() {
   const select = document.getElementById("course_ids");
   if (!select) return;
 
-  select.innerHTML = '<option disabled>Loading courses...</option>';
+  select.innerHTML =
+    '<option disabled>Loading courses...</option>';
 
   try {
     const result = await apiRequest(COURSE_API);
@@ -164,7 +182,8 @@ async function loadCourses() {
     select.innerHTML = "";
 
     if (!courses.length) {
-      select.innerHTML = '<option disabled>No courses found</option>';
+      select.innerHTML =
+        '<option disabled>No courses found</option>';
       return;
     }
 
@@ -193,7 +212,9 @@ async function loadLecturers() {
 
   body.innerHTML = `
     <tr>
-      <td colspan="5" class="text-center">Loading lecturers...</td>
+      <td colspan="5" class="text-center">
+        Loading lecturers...
+      </td>
     </tr>
   `;
 
@@ -206,7 +227,9 @@ async function loadLecturers() {
     if (!lecturers.length) {
       body.innerHTML = `
         <tr>
-          <td colspan="5" class="text-center">No lecturers found.</td>
+          <td colspan="5" class="text-center">
+            No lecturers found.
+          </td>
         </tr>
       `;
       return;
@@ -218,15 +241,23 @@ async function loadLecturers() {
 
       row.innerHTML = `
         <td>${escapeHTML(lecturer.staff_id)}</td>
-        <td>${escapeHTML(lecturer.first_name)}
-          ${escapeHTML(lecturer.last_name)}</td>
-        <td>${escapeHTML(lecturer.department_name || "")}</td>
+        <td>
+          ${escapeHTML(lecturer.first_name)}
+          ${escapeHTML(lecturer.last_name)}
+        </td>
+        <td>
+          ${escapeHTML(lecturer.department_name || "")}
+        </td>
         <td id="courses-${id}">Loading...</td>
         <td>
           <button class="btn btn-sm btn-primary me-1"
-            data-action="edit" data-id="${id}">Edit</button>
+            data-action="edit" data-id="${id}">
+            Edit
+          </button>
           <button class="btn btn-sm btn-danger"
-            data-action="delete" data-id="${id}">Delete</button>
+            data-action="delete" data-id="${id}">
+            Delete
+          </button>
         </td>
       `;
 
@@ -234,7 +265,9 @@ async function loadLecturers() {
     });
 
     await Promise.all(
-      lecturers.map((lecturer) => loadLecturerCourseNames(lecturer.id))
+      lecturers.map((lecturer) =>
+        loadLecturerCourseNames(lecturer.id)
+      )
     );
   } catch (error) {
     body.innerHTML = `
@@ -254,20 +287,29 @@ async function loadLecturers() {
 // =============================================
 
 async function loadLecturerCourseNames(id) {
-  const cell = document.getElementById(`courses-${Number(id)}`);
+  const cell = document.getElementById(
+    `courses-${Number(id)}`
+  );
+
   if (!cell) return;
 
   try {
-    const result = await apiRequest(`${LECTURER_API}/${id}/courses`);
+    const result = await apiRequest(
+      `${LECTURER_API}/${id}/courses`
+    );
+
     const assigned = getDataArray(result);
 
-    // Support APIs that return IDs or course objects.
     const ids = assigned.map((item) =>
-      Number(typeof item === "object" ? item.id : item)
+      Number(
+        typeof item === "object" ? item.id : item
+      )
     );
 
     const names = courses
-      .filter((course) => ids.includes(Number(course.id)))
+      .filter((course) =>
+        ids.includes(Number(course.id))
+      )
       .map((course) => course.course_code);
 
     cell.textContent = names.length
@@ -285,16 +327,24 @@ async function loadLecturerCourseNames(id) {
 async function saveLecturer(event) {
   event.preventDefault();
 
-  const form = document.getElementById("lecturerForm");
   const id = document.getElementById("lecturerId").value;
   const button = document.getElementById("saveBtn");
 
   const lecturer = {
-    staff_id: document.getElementById("staff_id").value.trim(),
-    department_id: document.getElementById("department_id").value,
-    first_name: document.getElementById("first_name").value.trim(),
-    last_name: document.getElementById("last_name").value.trim(),
-    email: document.getElementById("email").value.trim(),
+    staff_id: document.getElementById("staff_id")
+      .value.trim(),
+
+    department_id: document.getElementById("department_id")
+      .value,
+
+    first_name: document.getElementById("first_name")
+      .value.trim(),
+
+    last_name: document.getElementById("last_name")
+      .value.trim(),
+
+    email: document.getElementById("email")
+      .value.trim(),
   };
 
   const courseIds = Array.from(
@@ -308,7 +358,10 @@ async function saveLecturer(event) {
     !lecturer.last_name ||
     !lecturer.email
   ) {
-    showMessage("Please complete all required lecturer fields.", "danger");
+    showMessage(
+      "Please complete all required lecturer fields.",
+      "danger"
+    );
     return;
   }
 
@@ -329,23 +382,34 @@ async function saveLecturer(event) {
       });
 
       const created = result.data || result;
+
       lecturerId = Number(
-        result.lecturerId ?? created.lecturerId ?? created.id
+        result.lecturerId ??
+        created.lecturerId ??
+        created.id
       );
     }
 
     if (!lecturerId) {
       throw new Error(
-        "The API did not return the new lecturer ID. Check lecturerController."
+        "The API did not return the new lecturer ID. " +
+        "Check lecturerController."
       );
     }
 
-    await apiRequest(`${LECTURER_API}/${lecturerId}/courses`, {
-      method: "PUT",
-      body: JSON.stringify({ course_ids: courseIds }),
-    });
+    await apiRequest(
+      `${LECTURER_API}/${lecturerId}/courses`,
+      {
+        method: "PUT",
+        body: JSON.stringify({
+          course_ids: courseIds,
+        }),
+      }
+    );
 
-    showMessage("Lecturer and course assignments saved successfully.");
+    showMessage(
+      "Lecturer and course assignments saved successfully."
+    );
 
     resetForm();
     await loadLecturers();
@@ -362,37 +426,62 @@ async function saveLecturer(event) {
 
 async function editLecturer(id) {
   try {
-    const result = await apiRequest(`${LECTURER_API}/${id}`);
+    const result = await apiRequest(
+      `${LECTURER_API}/${id}`
+    );
+
     const lecturer = result.data || result;
 
-    document.getElementById("lecturerId").value = lecturer.id;
-    document.getElementById("staff_id").value = lecturer.staff_id || "";
-    document.getElementById("first_name").value = lecturer.first_name || "";
-    document.getElementById("last_name").value = lecturer.last_name || "";
-    document.getElementById("email").value = lecturer.email || "";
+    document.getElementById("lecturerId").value =
+      lecturer.id;
 
-    const departmentSelect = document.getElementById("department_id");
-    departmentSelect.value = lecturer.department_id || "";
+    document.getElementById("staff_id").value =
+      lecturer.staff_id || "";
+
+    document.getElementById("first_name").value =
+      lecturer.first_name || "";
+
+    document.getElementById("last_name").value =
+      lecturer.last_name || "";
+
+    document.getElementById("email").value =
+      lecturer.email || "";
+
+    const departmentSelect =
+      document.getElementById("department_id");
+
+    departmentSelect.value =
+      lecturer.department_id || "";
 
     const resultCourses = await apiRequest(
       `${LECTURER_API}/${id}/courses`
     );
 
     const assigned = getDataArray(resultCourses);
+
     const assignedIds = assigned.map((item) =>
-      Number(typeof item === "object" ? item.id : item)
+      Number(
+        typeof item === "object" ? item.id : item
+      )
     );
 
     const select = document.getElementById("course_ids");
 
     Array.from(select.options).forEach((option) => {
-      option.selected = assignedIds.includes(Number(option.value));
+      option.selected =
+        assignedIds.includes(Number(option.value));
     });
 
-    document.getElementById("formTitle").textContent = "Edit Lecturer";
-    document.getElementById("saveBtn").textContent = "Update Lecturer";
+    document.getElementById("formTitle").textContent =
+      "Edit Lecturer";
 
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    document.getElementById("saveBtn").textContent =
+      "Update Lecturer";
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
   } catch (error) {
     showMessage(error.message, "danger");
   }
@@ -427,8 +516,13 @@ document.addEventListener("click", (event) => {
 
   const id = Number(button.dataset.id);
 
-  if (button.dataset.action === "edit") editLecturer(id);
-  if (button.dataset.action === "delete") deleteLecturer(id);
+  if (button.dataset.action === "edit") {
+    editLecturer(id);
+  }
+
+  if (button.dataset.action === "delete") {
+    deleteLecturer(id);
+  }
 });
 
 // =============================================
@@ -441,10 +535,13 @@ function searchLecturers() {
 
   const query = input.value.toLowerCase();
 
-  document.querySelectorAll("#lecturerTableBody tr").forEach((row) => {
-    row.style.display = row.textContent.toLowerCase().includes(query)
-      ? ""
-      : "none";
+  document.querySelectorAll(
+    "#lecturerTableBody tr"
+  ).forEach((row) => {
+    row.style.display =
+      row.textContent.toLowerCase().includes(query)
+        ? ""
+        : "none";
   });
 }
 
@@ -457,11 +554,15 @@ function resetForm() {
   if (form) form.reset();
 
   document.getElementById("lecturerId").value = "";
-  document.getElementById("formTitle").textContent = "Add New Lecturer";
+
+  document.getElementById("formTitle").textContent =
+    "Add New Lecturer";
+
   document.getElementById("saveBtn").innerHTML =
     '<i class="bi bi-save"></i> Save Lecturer';
 
   const select = document.getElementById("course_ids");
+
   if (select) {
     Array.from(select.options).forEach((option) => {
       option.selected = false;
@@ -490,12 +591,14 @@ function logout(event) {
 // =============================================
 
 function escapeHTML(value) {
-  return String(value ?? "").replace(/[&<>"']/g, (character) => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;",
-  })[character]);
+  return String(value ?? "").replace(
+    /[&<>"']/g,
+    (character) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
+    })[character]
+  );
 }
-
