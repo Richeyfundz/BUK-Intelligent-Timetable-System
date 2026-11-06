@@ -198,22 +198,24 @@ exports.deleteLecturer = (req, res) => {
     if (err) {
       console.error("Delete Lecturer Error:", err);
 
-      return res.status(500).json({
+      return res.status(409).json({
         success: false,
-        message: "Failed to delete lecturer",
+        message: "Lecturer cannot be deleted.",
+        databaseError: err.sqlMessage || err.message,
+        errorCode: err.code
       });
     }
 
     if (!result.affectedRows) {
       return res.status(404).json({
         success: false,
-        message: "Lecturer not found",
+        message: "Lecturer not found"
       });
     }
 
     res.json({
       success: true,
-      message: "Lecturer deleted successfully",
+      message: "Lecturer deleted successfully"
     });
   });
 };
