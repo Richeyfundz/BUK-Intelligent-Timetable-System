@@ -5,7 +5,7 @@
  // =============================================
 
 const API_BASE =
-  "https://buk-intelligent-timetable-system-production.up.railway.app/api";
+"https://buk-itms-backend.onrender.com/api"
 
 const LECTURER_API = `${API_BASE}/lecturers`;
 const DEPARTMENT_API = `${API_BASE}/departments`;
