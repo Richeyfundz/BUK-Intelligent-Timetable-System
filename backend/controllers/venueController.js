@@ -8,13 +8,13 @@ exports.getAllVenues = (req, res) => {
 
       return res.status(500).json({
         success: false,
-        message: "Failed to fetch venues",
+        message: "Failed to fetch venues"
       });
     }
 
     res.json({
       success: true,
-      data: results,
+      data: results
     });
   });
 };
@@ -27,20 +27,20 @@ exports.getVenueById = (req, res) => {
 
       return res.status(500).json({
         success: false,
-        message: "Failed to fetch venue",
+        message: "Failed to fetch venue"
       });
     }
 
     if (results.length === 0) {
       return res.status(404).json({
         success: false,
-        message: "Venue not found",
+        message: "Venue not found"
       });
     }
 
     res.json({
       success: true,
-      data: results[0],
+      data: results[0]
     });
   });
 };
@@ -54,57 +54,54 @@ exports.createVenue = (req, res) => {
     capacity,
     faculty_id,
     department_id,
-    status,
+    status
   } = req.body;
 
   if (!venue_name || !venue_code || !venue_type || !capacity) {
     return res.status(400).json({
       success: false,
-      message: "Venue name, code, type and capacity are required",
+      message: "Venue name, code, type and capacity are required"
     });
   }
 
-  Venue.create(
-    {
-      venue_name,
-      venue_code,
-      venue_type,
-      capacity,
-      faculty_id: faculty_id || null,
-      department_id: department_id || null,
-      status: status || "Available",
-    },
-    (err, result) => {
-      if (err) {
-        console.error("Create Venue Error:", err);
+  Venue.create({
+    venue_name,
+    venue_code,
+    venue_type,
+    capacity,
+    faculty_id: faculty_id || null,
+    department_id: department_id || null,
+    status: status || "Available"
+  }, (err, result) => {
+    if (err) {
+      console.error("Create Venue Error:", err);
 
-        if (err.code === "ER_DUP_ENTRY") {
-          return res.status(409).json({
-            success: false,
-            message: "Venue code already exists",
-          });
-        }
-
-        if (err.code === "ER_NO_REFERENCED_ROW_2") {
-          return res.status(400).json({
-            success: false,
-            message: "Selected faculty or department does not exist",
-          });
-        }
-
-        return res.status(500).json({
+      if (err.code === "ER_DUP_ENTRY") {
+        return res.status(409).json({
           success: false,
-          message: "Failed to create venue",
+          message: "Venue code already exists"
         });
       }
 
-      res.status(201).json({
-        success: true,
-        message: "Venue added successfully",
-        venueId: result.insertId,
+      if (err.code === "ER_NO_REFERENCED_ROW_2") {
+        return res.status(400).json({
+          success: false,
+          message: "Selected faculty or department does not exist"
+        });
+      }
+
+      return res.status(500).json({
+        success: false,
+        message: "Failed to create venue"
       });
-    },
-  );
+    }
+
+    res.status(201).json({
+      success: true,
+      message: "Venue added successfully",
+      venueId: result.insertId
+    });
+  });
 };
 
 // UPDATE VENUE
@@ -116,57 +113,53 @@ exports.updateVenue = (req, res) => {
     capacity,
     faculty_id,
     department_id,
-    status,
+    status
   } = req.body;
 
   if (!venue_name || !venue_code || !venue_type || !capacity) {
     return res.status(400).json({
       success: false,
-      message: "Venue name, code, type and capacity are required",
+      message: "Venue name, code, type and capacity are required"
     });
   }
 
-  Venue.update(
-    req.params.id,
-    {
-      venue_name,
-      venue_code,
-      venue_type,
-      capacity,
-      faculty_id: faculty_id || null,
-      department_id: department_id || null,
-      status: status || "Available",
-    },
-    (err, result) => {
-      if (err) {
-        console.error("Update Venue Error:", err);
+  Venue.update(req.params.id, {
+    venue_name,
+    venue_code,
+    venue_type,
+    capacity,
+    faculty_id: faculty_id || null,
+    department_id: department_id || null,
+    status: status || "Available"
+  }, (err, result) => {
+    if (err) {
+      console.error("Update Venue Error:", err);
 
-        if (err.code === "ER_DUP_ENTRY") {
-          return res.status(409).json({
-            success: false,
-            message: "Venue code already exists",
-          });
-        }
-
-        return res.status(500).json({
+      if (err.code === "ER_DUP_ENTRY") {
+        return res.status(409).json({
           success: false,
-          message: "Failed to update venue",
+          message: "Venue code already exists"
         });
       }
 
-      if (result.affectedRows === 0) {
-        return res.status(404).json({
-          success: false,
-          message: "Venue not found",
-        });
-      }
-
-      res.json({
-        success: true,
-        message: "Venue updated successfully",
+      return res.status(500).json({
+        success: false,
+        message: "Failed to update venue"
       });
-    },
-  );
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Venue not found"
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Venue updated successfully"
+    });
+  });
 };
 
 // DELETE VENUE
@@ -175,22 +168,34 @@ exports.deleteVenue = (req, res) => {
     if (err) {
       console.error("Delete Venue Error:", err);
 
+      if (
+        err.code === "ER_ROW_IS_REFERENCED_2" ||
+        err.code === "ER_ROW_IS_REFERENCED"
+      ) {
+        return res.status(409).json({
+          success: false,
+          message:
+            "This venue cannot be deleted because it is being used in a timetable or exam timetable. Remove or change those timetable entries first."
+        });
+      }
+
       return res.status(500).json({
         success: false,
         message: "Failed to delete venue",
+        error: err.message
       });
     }
 
     if (result.affectedRows === 0) {
       return res.status(404).json({
         success: false,
-        message: "Venue not found",
+        message: "Venue not found"
       });
     }
 
     res.json({
       success: true,
-      message: "Venue deleted successfully",
+      message: "Venue deleted successfully"
     });
   });
 };
