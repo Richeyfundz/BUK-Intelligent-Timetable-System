@@ -1,3 +1,4 @@
+
 const Venue = require("../models/venueModel");
 
 // GET ALL VENUES
@@ -31,7 +32,7 @@ exports.getVenueById = (req, res) => {
       });
     }
 
-    if (results.length === 0) {
+    if (!results.length) {
       return res.status(404).json({
         success: false,
         message: "Venue not found"
@@ -55,7 +56,7 @@ exports.createVenue = (req, res) => {
     faculty_id,
     department_id,
     status
-  } = req.body;
+  } = req.body || {};
 
   if (!venue_name || !venue_code || !venue_type || !capacity) {
     return res.status(400).json({
@@ -92,7 +93,8 @@ exports.createVenue = (req, res) => {
 
       return res.status(500).json({
         success: false,
-        message: "Failed to create venue"
+        message: "Failed to create venue",
+        error: err.message
       });
     }
 
@@ -114,7 +116,7 @@ exports.updateVenue = (req, res) => {
     faculty_id,
     department_id,
     status
-  } = req.body;
+  } = req.body || {};
 
   if (!venue_name || !venue_code || !venue_type || !capacity) {
     return res.status(400).json({
@@ -144,7 +146,8 @@ exports.updateVenue = (req, res) => {
 
       return res.status(500).json({
         success: false,
-        message: "Failed to update venue"
+        message: "Failed to update venue",
+        error: err.message
       });
     }
 
@@ -161,18 +164,20 @@ exports.updateVenue = (req, res) => {
     });
   });
 };
- // DELETE VENUE
+
+// DELETE VENUE
 exports.deleteVenue = (req, res) => {
   Venue.delete(req.params.id, (err, result) => {
     if (err) {
       console.error("Delete Venue Error:", err);
 
-      if (err.code === "VENUE_IN_USE") {
+      if (err.code === "VENUE_REFERENCED") {
         return res.status(409).json({
           success: false,
-          message: "Venue is being used in existing timetable records.",
-          lectureRecords: err.lectures,
-          examRecords: err.exams
+          message: "Venue is still referenced by another database table.",
+          table: err.table,
+          column: err.column,
+          records: err.count
         });
       }
 
@@ -207,4 +212,3 @@ exports.deleteVenue = (req, res) => {
     });
   });
 };
-
