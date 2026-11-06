@@ -5,8 +5,7 @@
 // =============================================
 
 const API_URL =
-  "https://buk-intelligent-timetable-system-production.up.railway.app/api/faculties";
-
+ "https://buk-itms-backend.onrender.com/api"
 let editingFacultyId = null;
 
 // =============================================
