@@ -6,7 +6,7 @@ require("dotenv").config();
 const app = express();
 
 // Database connection
-require("./database");
+require("./config/database");
 const setupDatabase = require("./setupDatabase");
 const crypto = require("crypto");
 
